@@ -30,8 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files: nunca subir credenciales, pero sí la plantilla
 .env*
+!.env.example
+
+# documentos con credenciales
+*.local.md
 
 # vercel
 .vercel

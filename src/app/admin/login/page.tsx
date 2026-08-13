@@ -1,0 +1,46 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+
+import { Logo } from '@/components/Logo';
+
+import { FormularioLogin } from './FormularioLogin';
+
+export const metadata: Metadata = {
+  title: 'Panel interno',
+  robots: { index: false, follow: false },
+};
+
+export default async function Login({
+  searchParams,
+}: {
+  searchParams: Promise<{ siguiente?: string }>;
+}) {
+  const { siguiente } = await searchParams;
+
+  return (
+    <main className="grid min-h-dvh place-items-center bg-nube px-5 py-12">
+      <div className="w-full max-w-sm">
+        <div className="flex justify-center">
+          <Logo />
+        </div>
+
+        <div className="mt-8 rounded-3xl bg-white p-8 shadow-xl ring-1 ring-neutral-100">
+          <h1 className="text-xl font-extrabold tracking-tight">Panel interno</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            Solo para el equipo de verificación y conexión.
+          </p>
+
+          <div className="mt-7">
+            <FormularioLogin siguiente={siguiente} />
+          </div>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-neutral-500">
+          <Link href="/" className="hover:text-marca-morado">
+            ← Volver al sitio público
+          </Link>
+        </p>
+      </div>
+    </main>
+  );
+}
