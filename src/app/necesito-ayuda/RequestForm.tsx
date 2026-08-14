@@ -6,15 +6,17 @@ import { submitRequest, type FormState } from '@/app/actions';
 import { SubmitButton } from '@/components/form/SubmitButton';
 import {
   CheckboxField,
-  SelectField,
   TextField,
   TextareaField,
   OptionGroup,
   ErrorSummary,
 } from '@/components/form/Fields';
+import { HoneypotFields } from '@/components/form/HoneypotFields';
+import { LocationFields } from '@/components/form/LocationFields';
+import { NetworkStatusBanner } from '@/components/form/NetworkStatusBanner';
+import { PhoneField } from '@/components/form/PhoneField';
 import { EmergencyNotice, FormSection } from '@/components/form/Shell';
 import {
-  DEPARTMENTS,
   RESOURCES,
   RESOURCE_TYPES,
   URGENCIES,
@@ -31,15 +33,15 @@ const RESOURCE_OPTIONS = RESOURCE_TYPES.map((t) => ({
 
 const URGENCY_OPTIONS = URGENCIES.map((u) => ({ value: u, text: URGENCY_LABELS[u] }));
 
-const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d, text: d }));
-
 export function RequestForm() {
   const [state, action] = useActionState(submitRequest, INITIAL_STATE);
   const errors = state.errors ?? {};
 
   return (
-    <form action={action} className="space-y-9" noValidate>
+    <form action={action} className="relative space-y-9" noValidate>
+      <HoneypotFields />
       <EmergencyNotice />
+      <NetworkStatusBanner />
       <ErrorSummary errors={state.errors} />
 
       {state.message && (
@@ -81,21 +83,7 @@ export function RequestForm() {
       </FormSection>
 
       <FormSection step={2} title="¿Dónde estás?" description="Solo el equipo verificador ve esta información.">
-        <SelectField
-          name="department"
-          label="Departamento"
-          options={DEPARTMENT_OPTIONS}
-          searchPlaceholder="Buscar departamento…"
-          error={errors.department}
-          required
-        />
-        <TextField
-          name="municipality"
-          label="Municipio o ciudad"
-          placeholder="Ejemplo: Armenia"
-          error={errors.municipality}
-          required
-        />
+        <LocationFields departmentError={errors.department} municipalityError={errors.municipality} />
         <TextField
           name="zona"
           label="Barrio, vereda o zona"
@@ -119,17 +107,7 @@ export function RequestForm() {
           error={errors.name}
           required
         />
-        <TextField
-          name="phone"
-          label="Número de WhatsApp"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="300 123 4567"
-          hint="Por aquí te vamos a contactar. Es el único canal que usamos."
-          error={errors.phone}
-          required
-        />
+        <PhoneField error={errors.phone} />
         <TextField
           name="affectedPeople"
           label="¿Cuántas personas están afectadas?"

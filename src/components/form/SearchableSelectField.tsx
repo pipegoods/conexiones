@@ -17,6 +17,7 @@ type SearchableSelectFieldProps = {
   defaultValue?: string;
   searchPlaceholder?: string;
   emptyMessage?: string;
+  onValueChange?: (value: string) => void;
 };
 
 const fieldClassName =
@@ -66,6 +67,7 @@ export function SearchableSelectField({
   defaultValue,
   searchPlaceholder = 'Buscar…',
   emptyMessage = 'No hay resultados.',
+  onValueChange,
 }: SearchableSelectFieldProps) {
   const id = useId();
   const listboxId = `${id}-listbox`;
@@ -110,6 +112,7 @@ export function SearchableSelectField({
 
   function selectOption(option: Option) {
     setValue(option.value);
+    onValueChange?.(option.value);
     closeList();
   }
 

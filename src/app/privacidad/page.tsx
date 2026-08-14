@@ -25,6 +25,22 @@ export default function Privacy() {
           </p>
 
           <div className="mt-8 space-y-7 leading-relaxed text-neutral-700">
+            <Block title="Responsable del tratamiento">
+              <p>
+                Conexiones actúa como responsable del tratamiento de los datos personales que recoge a través de
+                esta plataforma. Para ejercer tus derechos o hacer consultas sobre privacidad, escríbenos por
+                WhatsApp al número publicado en el sitio e indica tu código de caso si ya tienes uno.
+              </p>
+            </Block>
+
+            <Block title="Base legal">
+              <p>
+                Tratamos tus datos con base en la autorización que nos das al enviar el formulario, y cuando aplique,
+                en el interés legítimo de coordinar ayuda humanitaria durante emergencias, siempre respetando la Ley
+                1581 de 2012 y el Decreto 1377 de 2013.
+              </p>
+            </Block>
+
             <Block title="Qué datos recogemos">
               <p>
                 Cuando pides ayuda: tu nombre, tu número de WhatsApp, tu municipio y zona, un punto de referencia,
@@ -75,6 +91,22 @@ export default function Privacy() {
               <p>
                 Los datos viajan cifrados y se almacenan en una base de datos con acceso restringido. El panel
                 interno exige usuario y contraseña, y cada acción queda registrada con el nombre de quien la hizo.
+              </p>
+            </Block>
+
+            <Block title="Cookies y analítica">
+              <p>
+                Usamos cookies técnicas estrictamente necesarias para mantener la sesión del panel interno y el
+                funcionamiento del sitio. No usamos cookies de publicidad ni vendemos datos de navegación a
+                terceros.
+              </p>
+            </Block>
+
+            <Block title="Actualizaciones">
+              <p>
+                Podemos actualizar esta política cuando cambie la operación de la plataforma. Publicaremos la
+                versión vigente en esta misma página. Si el cambio es relevante para datos ya recogidos, te lo
+                informaremos por los medios de contacto que nos hayas autorizado.
               </p>
             </Block>
 

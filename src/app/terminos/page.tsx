@@ -62,6 +62,30 @@ export default function Terms() {
               </p>
             </Block>
 
+            <Block title="Limitación de responsabilidad">
+              <p>
+                Conexiones facilita el contacto entre personas, pero no garantiza que toda solicitud reciba ayuda
+                ni que toda oferta sea aceptada. No respondemos por actos u omisiones de terceros una vez compartido
+                el contacto, salvo en la medida exigida por la ley colombiana.
+              </p>
+            </Block>
+
+            <Block title="Propiedad intelectual">
+              <p>
+                El nombre Conexiones, su identidad visual y los contenidos del sitio son de la iniciativa. Puedes
+                compartir los enlaces públicos del formulario; no está permitido usar la marca para suplantar al
+                equipo ni para pedir dinero en nuestro nombre.
+              </p>
+            </Block>
+
+            <Block title="Modificaciones">
+              <p>
+                Podemos actualizar estos términos para reflejar cambios operativos o legales. La versión publicada
+                en esta página es la vigente. Si sigues usando la plataforma después de un cambio, entiendes que
+                aplican los términos actualizados.
+              </p>
+            </Block>
+
             <Block title="Gratuidad">
               <p>
                 Usar Conexiones no cuesta nada, ni para quien pide ni para quien ayuda. Nunca pedimos dinero, datos

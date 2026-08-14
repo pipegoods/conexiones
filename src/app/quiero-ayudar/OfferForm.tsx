@@ -12,9 +12,12 @@ import {
   OptionGroup,
   ErrorSummary,
 } from '@/components/form/Fields';
+import { HoneypotFields } from '@/components/form/HoneypotFields';
+import { LocationFields } from '@/components/form/LocationFields';
+import { NetworkStatusBanner } from '@/components/form/NetworkStatusBanner';
+import { PhoneField } from '@/components/form/PhoneField';
 import { FormSection } from '@/components/form/Shell';
 import {
-  DEPARTMENTS,
   AVAILABILITIES,
   AVAILABILITY_LABELS,
   RADIUS_OPTIONS_KM,
@@ -38,14 +41,13 @@ const AVAILABILITY_OPTIONS = AVAILABILITIES.map((d) => ({
 
 const RADIUS_OPTIONS = RADIUS_OPTIONS_KM.map((r) => ({ value: String(r), text: RADIUS_LABELS[r] }));
 
-const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d, text: d }));
-
 export function OfferForm() {
   const [state, action] = useActionState(submitOffer, INITIAL_STATE);
   const errors = state.errors ?? {};
 
   return (
-    <form action={action} className="space-y-9" noValidate>
+    <form action={action} className="relative space-y-9" noValidate>
+      <HoneypotFields />
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
         <p className="text-sm leading-relaxed text-emerald-900">
           <strong className="font-bold">No te preguntamos qué quieres donar.</strong> Te preguntamos qué puedes
@@ -54,6 +56,7 @@ export function OfferForm() {
         </p>
       </div>
 
+      <NetworkStatusBanner />
       <ErrorSummary errors={state.errors} />
 
       {state.message && (
@@ -87,21 +90,7 @@ export function OfferForm() {
       </FormSection>
 
       <FormSection step={2} title="¿Dónde estás y hasta dónde puedes ir?">
-        <SelectField
-          name="department"
-          label="Departamento"
-          options={DEPARTMENT_OPTIONS}
-          searchPlaceholder="Buscar departamento…"
-          error={errors.department}
-          required
-        />
-        <TextField
-          name="municipality"
-          label="Municipio o ciudad"
-          placeholder="Ejemplo: Armenia"
-          error={errors.municipality}
-          required
-        />
+        <LocationFields departmentError={errors.department} municipalityError={errors.municipality} />
         <TextField name="zone" label="Barrio, vereda o zona" error={errors.zone} />
         <SelectField
           name="radiusKm"
@@ -133,16 +122,9 @@ export function OfferForm() {
 
       <FormSection step={4} title="¿Quién eres?">
         <TextField name="name" label="Nombre y apellido" autoComplete="name" error={errors.name} required />
-        <TextField
-          name="phone"
-          label="Número de WhatsApp"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="300 123 4567"
+        <PhoneField
           hint="Te escribimos solo cuando haya un caso verificado que encaje con lo que ofreces."
           error={errors.phone}
-          required
         />
         <TextField
           name="email"

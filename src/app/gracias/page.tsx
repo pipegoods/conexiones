@@ -50,8 +50,8 @@ export default async function ThankYou({ searchParams }: Props) {
     <>
       <Header />
       <main className="bg-nube">
-        <div className="mx-auto max-w-2xl px-5 py-16">
-          <div className="rounded-3xl bg-white p-8 text-center shadow-xl ring-1 ring-neutral-100 sm:p-12">
+        <div className="mx-auto max-w-2xl px-5 py-12 sm:py-16">
+          <div className="rounded-3xl bg-white p-6 text-center shadow-xl ring-1 ring-neutral-100 sm:p-10 lg:p-12">
             <div
               className={`mx-auto grid h-20 w-20 place-items-center rounded-full text-4xl ${
                 isOffer ? 'bg-emerald-50' : 'bg-pink-50'
@@ -60,7 +60,7 @@ export default async function ThankYou({ searchParams }: Props) {
               <span aria-hidden="true">{isOffer ? '🤝' : '💌'}</span>
             </div>
 
-            <h1 className="mt-6 text-3xl font-extrabold tracking-tight">
+            <h1 className="mt-6 text-2xl font-extrabold tracking-tight sm:text-3xl">
               {isOffer ? '¡Gracias por ponerte a disposición!' : 'Recibimos tu solicitud'}
             </h1>
 
@@ -92,7 +92,7 @@ export default async function ThankYou({ searchParams }: Props) {
                 href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-9 inline-block rounded-2xl bg-[#25D366] px-7 py-4 font-bold text-white shadow-lg transition hover:brightness-105"
+                className="mt-9 inline-block w-full rounded-2xl bg-[#25D366] px-7 py-4 text-center font-bold text-white shadow-lg transition hover:brightness-105 sm:w-auto"
               >
                 Escribirnos por WhatsApp
               </a>

@@ -7,21 +7,16 @@ import {
   RESOURCE_TYPES,
   URGENCIES,
 } from './catalogs';
+import { isValidMunicipality } from './locations';
+import { normalizePhoneInput } from './phone';
 
 /**
- * Normalizes a Colombian phone number to E.164 (+57XXXXXXXXXX).
- * Accepts common user input formats and returns null for invalid mobile numbers.
+ * Normalizes a Colombian mobile number to E.164 (+57XXXXXXXXXX).
+ * Public forms require WhatsApp, so only 10-digit numbers starting with 3 are accepted.
  */
 export function normalizePhone(value: string): string | null {
-  const digits = value.replace(/\D/g, '');
-  const withoutCountryCode = digits.startsWith('57') && digits.length === 12 ? digits.slice(2) : digits;
-
-  // Colombian mobile: 10 digits beginning with 3.
-  if (/^3\d{9}$/.test(withoutCountryCode)) return `+57${withoutCountryCode}`;
-
-  // Landline with a national prefix; accepted even though WhatsApp may not work.
-  if (/^[1-8]\d{9}$/.test(withoutCountryCode)) return `+57${withoutCountryCode}`;
-
+  const digits = normalizePhoneInput(value);
+  if (/^3\d{9}$/.test(digits)) return `+57${digits}`;
   return null;
 }
 
@@ -41,7 +36,7 @@ const phone = z
     if (!normalized) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Ese número no parece válido. Escríbelo como 300 123 4567.',
+        message: 'Escribe un celular colombiano válido que empiece por 3, por ejemplo 300 123 4567.',
       });
       return z.NEVER;
     }
@@ -64,64 +59,81 @@ const department = z.enum(DEPARTMENTS, { message: 'Selecciona un departamento.' 
 const municipality = z
   .string()
   .trim()
-  .min(2, 'Escribe el municipio.')
+  .min(2, 'Selecciona un municipio.')
   .max(80, 'Ese nombre de municipio es demasiado largo.');
 
 const acceptsDataUse = z
   .boolean()
   .refine((v) => v === true, 'Necesitamos tu autorización para tratar tus datos y poder ayudarte.');
 
-export const requestSchema = z.object({
-  name,
-  phone,
-  isForSomeoneElse: z.boolean().default(false),
-  affectedPeople: z.coerce
-    .number()
-    .int()
-    .min(1, 'Debe ser al menos 1 persona.')
-    .max(500, 'Si son más de 500 personas, contáctanos directamente por WhatsApp.'),
-  hasMinors: z.boolean().default(false),
-  hasElderly: z.boolean().default(false),
-  types,
-  description: z
-    .string()
-    .trim()
-    .min(20, 'Cuéntanos un poco más: entre más claro, más rápido encontramos a quien pueda ayudar.')
-    .max(1500, 'Resume un poco más, por favor.'),
-  urgency: z.enum(URGENCIES, { message: 'Selecciona qué tan urgente es.' }),
-  department,
-  municipality,
-  zone: z.string().trim().max(120).optional().or(z.literal('')),
-  addressReference: z.string().trim().max(300).optional().or(z.literal('')),
-  acceptsDataUse,
-  acceptsWhatsapp: z.boolean().default(true),
-});
+function withLocationValidation<T extends z.ZodType>(schema: T) {
+  return schema.superRefine((data, ctx) => {
+    const row = data as { department: string; municipality: string };
+    if (!isValidMunicipality(row.department, row.municipality)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['municipality'],
+        message: 'Selecciona un municipio válido para el departamento elegido.',
+      });
+    }
+  });
+}
 
-export const offerSchema = z.object({
-  name,
-  phone,
-  email: z.string().trim().email('Ese correo no parece válido.').optional().or(z.literal('')),
-  organization: z.string().trim().max(160).optional().or(z.literal('')),
-  types,
-  description: z
-    .string()
-    .trim()
-    .min(20, 'Sé concreto: "Soy carpintero y puedo reparar puertas y techos" vale mucho más que "quiero ayudar".')
-    .max(1500, 'Resume un poco más, por favor.'),
-  department,
-  municipality,
-  zone: z.string().trim().max(120).optional().or(z.literal('')),
-  radiusKm: z.coerce
-    .number()
-    .int()
-    .refine((v) => (RADIUS_OPTIONS_KM as readonly number[]).includes(v), 'Selecciona hasta dónde puedes desplazarte.'),
-  availability: z
-    .array(z.enum(AVAILABILITIES))
-    .min(1, 'Selecciona al menos un momento en el que puedas.'),
-  availabilityNote: z.string().trim().max(300).optional().or(z.literal('')),
-  acceptsDataUse,
-  acceptsWhatsapp: z.boolean().default(true),
-});
+export const requestSchema = withLocationValidation(
+  z.object({
+    name,
+    phone,
+    isForSomeoneElse: z.boolean().default(false),
+    affectedPeople: z.coerce
+      .number()
+      .int()
+      .min(1, 'Debe ser al menos 1 persona.')
+      .max(500, 'Si son más de 500 personas, contáctanos directamente por WhatsApp.'),
+    hasMinors: z.boolean().default(false),
+    hasElderly: z.boolean().default(false),
+    types,
+    description: z
+      .string()
+      .trim()
+      .min(20, 'Cuéntanos un poco más: entre más claro, más rápido encontramos a quien pueda ayudar.')
+      .max(1500, 'Resume un poco más, por favor.'),
+    urgency: z.enum(URGENCIES, { message: 'Selecciona qué tan urgente es.' }),
+    department,
+    municipality,
+    zone: z.string().trim().max(120).optional().or(z.literal('')),
+    addressReference: z.string().trim().max(300).optional().or(z.literal('')),
+    acceptsDataUse,
+    acceptsWhatsapp: z.boolean().default(true),
+  }),
+);
+
+export const offerSchema = withLocationValidation(
+  z.object({
+    name,
+    phone,
+    email: z.string().trim().email('Ese correo no parece válido.').optional().or(z.literal('')),
+    organization: z.string().trim().max(160).optional().or(z.literal('')),
+    types,
+    description: z
+      .string()
+      .trim()
+      .min(20, 'Sé concreto: "Soy carpintero y puedo reparar puertas y techos" vale mucho más que "quiero ayudar".')
+      .max(1500, 'Resume un poco más, por favor.'),
+    department,
+    municipality,
+    zone: z.string().trim().max(120).optional().or(z.literal('')),
+    radiusKm: z.coerce
+      .number()
+      .int()
+      .refine((v) => (RADIUS_OPTIONS_KM as readonly number[]).includes(v), 'Selecciona hasta dónde puedes desplazarte.'),
+    availability: z
+      .array(z.enum(AVAILABILITIES))
+      .min(1, 'Selecciona al menos un momento en el que puedas.'),
+    availabilityNote: z.string().trim().max(300).optional().or(z.literal('')),
+    acceptsDataUse,
+    acceptsWhatsapp: z.boolean().default(true),
+  }),
+);
 
 export type RequestData = z.output<typeof requestSchema>;
 export type OfferData = z.output<typeof offerSchema>;

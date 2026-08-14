@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { updateRequestStatus } from '@/app/admin/actions';
 import { ActivityLog } from '@/components/admin/ActivityLog';
+import { DuplicatePhoneBanner } from '@/components/admin/DuplicatePhoneWarning';
 import { InternalNotes } from '@/components/admin/InternalNotes';
 import { Card, DateDisplay, EmptyState } from '@/components/admin/Primitives';
 import { RequestConnections } from '@/components/admin/RequestConnections';
@@ -10,7 +11,7 @@ import { RequestContact } from '@/components/admin/RequestContact';
 import { RequestDetails } from '@/components/admin/RequestDetails';
 import { VolunteerSuggestions } from '@/components/admin/VolunteerSuggestions';
 import { REQUEST_STATUS_META, REQUEST_TRANSITIONS } from '@/lib/catalogs';
-import { getRequest, getSuggestionsForRequest } from '@/lib/queries';
+import { getDuplicateCasesForRequest, getRequest, getSuggestionsForRequest } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
   const { request, links, log } = data;
   const transitions = REQUEST_TRANSITIONS[request.status];
+  const duplicateCases = await getDuplicateCasesForRequest(request.phone, request.id);
 
   // Suggestions only make sense after verifying that the request is real.
   const suggestions = ['verified', 'connected'].includes(request.status)
@@ -34,6 +36,8 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
       </Link>
 
       <RequestDetails request={request} />
+
+      <DuplicatePhoneBanner cases={duplicateCases} />
 
       <ActivityLog log={log} />
 

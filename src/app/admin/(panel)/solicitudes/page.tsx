@@ -8,15 +8,17 @@ import {
   ResourceChips,
   UrgencyBadge,
 } from '@/components/admin/Primitives';
+import { DuplicatePhoneChip } from '@/components/admin/DuplicatePhoneWarning';
+import { RequestFilterFields } from '@/components/admin/RequestFilterFields';
 import { TimeAgo } from '@/components/admin/TimeAgo';
-import { REQUEST_STATUSES, REQUEST_STATUS_META, type RequestStatus } from '@/lib/catalogs';
-import { listRequests } from '@/lib/queries';
+import { REQUEST_STATUSES, REQUEST_STATUS_META, URGENCIES, type RequestStatus, type Urgency } from '@/lib/catalogs';
+import { getRequestIdsWithDuplicatePhone, listRequests } from '@/lib/queries';
 import { requestCode } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
 type PageProps = {
-  searchParams: Promise<{ 'estado'?: string; 'pagina'?: string; status?: string; page?: string; q?: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 };
 
 export default async function Requests({ searchParams }: PageProps) {
@@ -28,12 +30,23 @@ export default async function Requests({ searchParams }: PageProps) {
   const search = params.q ?? '';
   const page = Math.max(1, Number(params['pagina'] ?? params.page) || 1);
 
-  const { rows, total, pages } = await listRequests({ status, search, page });
+  const { rows, total, pages } = await listRequests({
+    status,
+    search,
+    page,
+    department: params.department,
+    municipality: params.municipality,
+    urgency: URGENCIES.includes(params.urgency as Urgency) ? (params.urgency as Urgency) : undefined,
+  });
+  const duplicateIds = await getRequestIdsWithDuplicatePhone(rows.map((r) => ({ id: r.id, phone: r.phone })));
 
   const filterLink = (st?: RequestStatus) => {
     const sp = new URLSearchParams();
     if (st) sp.set('estado', st);
     if (search) sp.set('q', search);
+    if (params.department) sp.set('department', params.department);
+    if (params.municipality) sp.set('municipality', params.municipality);
+    if (params.urgency) sp.set('urgency', params.urgency);
     const query = sp.toString();
     return `/admin/solicitudes${query ? `?${query}` : ''}`;
   };
@@ -71,23 +84,13 @@ export default async function Requests({ searchParams }: PageProps) {
           ))}
         </div>
 
-        <form method="get" className="mt-4 flex gap-2">
-          {status && <input type="hidden" name="estado" value={status} />}
-          <input
-            type="search"
-            name="q"
-            defaultValue={search}
-            placeholder="Buscar por nombre, teléfono, municipio o descripción…"
-            aria-label="Buscar solicitudes"
-            className="flex-1 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm focus:border-marca-morado focus:ring-2 focus:ring-marca-morado/20"
-          />
-          <button
-            type="submit"
-            className="rounded-xl bg-tinta px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-125"
-          >
-            Buscar
-          </button>
-        </form>
+        <RequestFilterFields
+          status={status}
+          search={search}
+          department={params.department}
+          municipality={params.municipality}
+          urgency={params.urgency}
+        />
       </Card>
 
       {rows.length === 0 ? (
@@ -103,6 +106,7 @@ export default async function Requests({ searchParams }: PageProps) {
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="font-mono text-sm font-bold text-neutral-400">{requestCode(s.number)}</span>
                   <RequestBadge status={s.status} />
+                  {duplicateIds.has(s.id) && <DuplicatePhoneChip />}
                   <UrgencyBadge urgency={s.urgency} />
                   <span className="ml-auto text-sm">
                     <TimeAgo value={s.createdAt} /> · <DateDisplay value={s.createdAt} />
@@ -138,6 +142,9 @@ export default async function Requests({ searchParams }: PageProps) {
           {Array.from({ length: pages }, (_, i) => i + 1).map((p) => {
             const sp = new URLSearchParams();
             if (status) sp.set('estado', status);
+            if (params.department) sp.set('department', params.department);
+            if (params.municipality) sp.set('municipality', params.municipality);
+            if (params.urgency) sp.set('urgency', params.urgency);
             if (search) sp.set('q', search);
             sp.set('pagina', String(p));
             return (

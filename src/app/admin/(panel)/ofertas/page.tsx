@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Card, DateDisplay, EmptyState, OfferBadge, ResourceChips } from '@/components/admin/Primitives';
+import { DuplicatePhoneChip } from '@/components/admin/DuplicatePhoneWarning';
 import {
   AVAILABILITY_LABELS,
   OFFER_STATUSES,
@@ -9,7 +10,7 @@ import {
   type Availability,
   type OfferStatus,
 } from '@/lib/catalogs';
-import { listOffers } from '@/lib/queries';
+import { getOfferIdsWithDuplicatePhone, listOffers } from '@/lib/queries';
 import { formatPhone } from '@/lib/validations';
 import { offerCode } from '@/lib/whatsapp';
 
@@ -29,6 +30,7 @@ export default async function Offers({ searchParams }: PageProps) {
   const page = Math.max(1, Number(params['pagina'] ?? params.page) || 1);
 
   const { rows, total, pages } = await listOffers({ status, search, page });
+  const duplicateIds = await getOfferIdsWithDuplicatePhone(rows.map((o) => ({ id: o.id, phone: o.phone })));
 
   const filterLink = (st?: OfferStatus) => {
     const sp = new URLSearchParams();
@@ -102,6 +104,7 @@ export default async function Offers({ searchParams }: PageProps) {
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="font-mono text-sm font-bold text-neutral-400">{offerCode(o.number)}</span>
                   <OfferBadge status={o.status} />
+                  {duplicateIds.has(o.id) && <DuplicatePhoneChip />}
                   <span className="font-bold text-tinta">{o.name}</span>
                   {o.organization && <span className="text-sm text-neutral-500">({o.organization})</span>}
                   <span className="ml-auto text-sm text-neutral-400">

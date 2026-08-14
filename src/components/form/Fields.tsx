@@ -133,12 +133,14 @@ export function SelectField({
   defaultValue,
   searchable,
   searchPlaceholder,
+  onValueChange,
 }: Base & {
   options: readonly { value: string; text: string }[];
   placeholder?: string;
   defaultValue?: string;
   searchable?: boolean;
   searchPlaceholder?: string;
+  onValueChange?: (value: string) => void;
 }) {
   const id = useId();
   const useSearchable = searchable ?? options.length >= SEARCHABLE_SELECT_MIN_OPTIONS;
@@ -155,9 +157,12 @@ export function SelectField({
         placeholder={placeholder}
         defaultValue={defaultValue}
         searchPlaceholder={searchPlaceholder}
+        onValueChange={onValueChange}
       />
     );
   }
+
+  const includesEmptyOption = options.some((option) => option.value === '');
 
   return (
     <div>
@@ -166,13 +171,16 @@ export function SelectField({
         id={id}
         name={name}
         defaultValue={defaultValue ?? ''}
+        onChange={(event) => onValueChange?.(event.currentTarget.value)}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : hint ? `${id}-ayuda` : undefined}
         className={`${fieldClassName} ${error ? 'border-red-400' : ''}`}
       >
-        <option value="" disabled>
-          {placeholder}
-        </option>
+        {!includesEmptyOption && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.text}

@@ -24,7 +24,7 @@ const SOCIAL = [
 export function Footer() {
   return (
     <footer className="border-t border-neutral-100 bg-white">
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-10 sm:py-14 md:grid-cols-2 lg:grid-cols-4">
         <div>
           <Logo tone="light" />
           <div className="mt-5 flex gap-3" aria-label="Redes sociales">

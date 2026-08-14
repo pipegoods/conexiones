@@ -3,20 +3,15 @@ import Link from 'next/link';
 import { Card, EmptyState, RequestBadge, ResourceChips, UrgencyBadge } from '@/components/admin/Primitives';
 import { TimeAgo } from '@/components/admin/TimeAgo';
 import { REQUEST_STATUSES, REQUEST_STATUS_META } from '@/lib/catalogs';
-import { getSummary, listRequests } from '@/lib/queries';
+import { getSummary, listPendingRequests } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Summary() {
-  const [summary, pendingResult] = await Promise.all([
-    getSummary(),
-    listRequests({ page: 1 }),
-  ]);
+  const [summary, needsAttention] = await Promise.all([getSummary(), listPendingRequests(8)]);
 
   const funnel = REQUEST_STATUSES.filter((status) => status !== 'discarded');
   const max = Math.max(1, ...funnel.map((status) => summary.byStatus[status]));
-
-  const needsAttention = pendingResult.rows.filter((s) => ['received', 'contacted', 'verified'].includes(s.status));
 
   return (
     <div className="space-y-6">
@@ -129,7 +124,7 @@ export default async function Summary() {
           <EmptyState>No hay nada pendiente. Buen trabajo.</EmptyState>
         ) : (
           <ul className="divide-y divide-neutral-100">
-            {needsAttention.slice(0, 8).map((s) => (
+            {needsAttention.map((s) => (
               <li key={s.id}>
                 <Link
                   href={`/admin/solicitudes/${s.id}`}

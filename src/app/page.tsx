@@ -1,8 +1,10 @@
 import Link from 'next/link';
 
-import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { Header } from '@/components/Header';
+import { ShareButtons } from '@/components/ShareButtons';
 import { RESOURCES, type ResourceType } from '@/lib/catalogs';
+import { absoluteUrl } from '@/lib/site';
 import { getStats } from '@/lib/stats';
 
 /** Statistics refresh every minute: responsive enough without overloading the database. */
@@ -99,6 +101,9 @@ const frequentlyAskedQuestions = [
 
 export default async function Home() {
   const stats = await getStats();
+  const needUrl = absoluteUrl('/necesito-ayuda').href;
+  const offerUrl = absoluteUrl('/quiero-ayudar').href;
+  const teamWhatsapp = process.env.NEXT_PUBLIC_WHATSAPP_TEAM ?? null;
 
   return (
     <>
@@ -110,6 +115,7 @@ export default async function Home() {
         <LiveStats stats={stats} />
         <AboutUs />
         <FAQ />
+        <ShareSection needUrl={needUrl} offerUrl={offerUrl} teamWhatsapp={teamWhatsapp} />
         <FinalCallToAction />
       </main>
       <Footer />
@@ -122,9 +128,9 @@ export default async function Home() {
 function Hero() {
   return (
     <section className="relative overflow-hidden bg-linear-to-b from-white to-nube">
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-16 lg:grid-cols-[1.05fr_1fr] lg:py-24">
+      <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-12 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:py-24">
         <div>
-          <h1 className="text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
+          <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
             Cuando algo ocurre,
             <br />
             <span className="texto-gradiente">todos nos conectamos.</span>
@@ -248,11 +254,11 @@ function HowItWorks() {
   return (
     <section id="como-funciona" className="bg-nube py-6">
       <div className="mx-auto max-w-6xl px-5">
-        <div className="rounded-3xl bg-white/70 px-6 py-14 ring-1 ring-neutral-100">
+        <div className="rounded-3xl bg-white/70 px-4 py-10 ring-1 ring-neutral-100 sm:px-6 sm:py-14">
           <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-marca-morado">
             Cómo funciona
           </p>
-          <h2 className="mt-3 text-center text-4xl font-extrabold tracking-tight">
+          <h2 className="mt-3 text-center text-3xl font-extrabold tracking-tight sm:text-4xl">
             Tres pasos simples. Un <span className="texto-gradiente">impacto real.</span>
           </h2>
 
@@ -340,13 +346,13 @@ function SidePanel({
   side: 'seeking' | 'offering';
 }) {
   return (
-    <div className="rounded-3xl bg-white p-8 ring-1 ring-neutral-100">
+    <div className="rounded-3xl bg-white p-6 ring-1 ring-neutral-100 sm:p-8">
       <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${labelClassName}`}>
         {label}
       </span>
-      <h2 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight">{title}</h2>
+      <h2 className="mt-4 text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">{title}</h2>
 
-      <ul className="mt-7 grid grid-cols-2 gap-2.5">
+      <ul className="mt-7 grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2">
         {types.map((t) => (
           <li
             key={t}
@@ -391,7 +397,7 @@ function LiveStats({
                 <span aria-hidden="true">{c.emoji}</span>
               </span>
               <div>
-                <dd className="text-4xl font-extrabold tracking-tight tabular-nums">{c.value}</dd>
+                <dd className="text-3xl font-extrabold tracking-tight tabular-nums sm:text-4xl">{c.value}</dd>
                 <dt className="mt-0.5 text-sm text-neutral-500">{c.text}</dt>
               </div>
             </div>
@@ -412,7 +418,7 @@ function AboutUs() {
   return (
     <section id="sobre-nosotros" className="bg-nube py-6">
       <div className="mx-auto max-w-6xl px-5">
-        <div className="grid gap-8 rounded-3xl bg-white p-10 ring-1 ring-neutral-100 lg:grid-cols-2">
+        <div className="grid gap-8 rounded-3xl bg-white p-6 ring-1 ring-neutral-100 sm:p-10 lg:grid-cols-2">
           <div>
             <h2 className="text-3xl font-extrabold tracking-tight">
               Sobre <span className="texto-gradiente">Conexiones</span>
@@ -471,6 +477,34 @@ function FAQ() {
               <p className="mt-3 text-sm leading-relaxed text-neutral-600">{f.answer}</p>
             </details>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* --------------------------------------------------------- Share links -- */
+
+function ShareSection({
+  needUrl,
+  offerUrl,
+  teamWhatsapp,
+}: {
+  needUrl: string;
+  offerUrl: string;
+  teamWhatsapp: string | null;
+}) {
+  return (
+    <section className="bg-nube py-10">
+      <div className="mx-auto max-w-3xl px-5 text-center">
+        <h2 className="text-2xl font-extrabold tracking-tight text-tinta sm:text-3xl">
+          Comparte Conexiones
+        </h2>
+        <p className="mt-2 text-neutral-600">
+          En una emergencia, un enlace claro en WhatsApp ayuda más que mil mensajes sueltos.
+        </p>
+        <div className="mt-6 flex justify-center">
+          <ShareButtons needUrl={needUrl} offerUrl={offerUrl} teamWhatsapp={teamWhatsapp} />
         </div>
       </div>
     </section>

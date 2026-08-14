@@ -13,6 +13,7 @@ import {
 } from '@/components/admin/Primitives';
 import { WhatsappButton } from '@/components/admin/WhatsappButton';
 import { ActivityLog } from '@/components/admin/ActivityLog';
+import { DuplicatePhoneBanner } from '@/components/admin/DuplicatePhoneWarning';
 import {
   AVAILABILITY_LABELS,
   OFFER_STATUS_META,
@@ -20,7 +21,7 @@ import {
   RADIUS_LABELS,
   type Availability,
 } from '@/lib/catalogs';
-import { getOffer } from '@/lib/queries';
+import { getDuplicateCasesForOffer, getOffer } from '@/lib/queries';
 import { formatPhone } from '@/lib/validations';
 import { offerCode, requestCode, whatsappLink } from '@/lib/whatsapp';
 
@@ -33,6 +34,7 @@ export default async function OfferDetailPage({ params }: { params: Promise<{ id
 
   const { offer: o, links, log } = data;
   const transitions = OFFER_TRANSITIONS[o.status];
+  const duplicateCases = await getDuplicateCasesForOffer(o.phone);
 
   const verificationMessage = [
     `Hola ${o.name.split(' ')[0]}, te escribimos de *Conexiones*.`,
@@ -56,6 +58,8 @@ export default async function OfferDetailPage({ params }: { params: Promise<{ id
           Registrado <DateDisplay value={o.createdAt} />
         </span>
       </div>
+
+      <DuplicatePhoneBanner cases={duplicateCases} />
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-6">

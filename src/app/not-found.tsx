@@ -24,22 +24,22 @@ export default function NotFound() {
           Puede que el enlace esté roto o que la página haya cambiado. {SITE_NAME} sigue activo para
           conectar quien necesita ayuda con quien puede aportar.
         </p>
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+        <div className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <Link
             href="/"
-            className="rounded-full bg-linear-to-r from-marca-rosa to-marca-morado px-7 py-3 text-sm font-bold text-white shadow-lg shadow-marca-rosa/25 transition hover:brightness-110"
+            className="rounded-full bg-linear-to-r from-marca-rosa to-marca-morado px-7 py-3 text-center text-sm font-bold text-white shadow-lg shadow-marca-rosa/25 transition hover:brightness-110"
           >
             Ir al inicio
           </Link>
           <Link
             href="/necesito-ayuda"
-            className="rounded-full border border-neutral-200 px-7 py-3 text-sm font-bold text-neutral-800 transition hover:border-marca-morado hover:text-marca-morado"
+            className="rounded-full border border-neutral-200 px-7 py-3 text-center text-sm font-bold text-neutral-800 transition hover:border-marca-morado hover:text-marca-morado"
           >
             Necesito ayuda
           </Link>
           <Link
             href="/quiero-ayudar"
-            className="rounded-full border border-neutral-200 px-7 py-3 text-sm font-bold text-neutral-800 transition hover:border-marca-morado hover:text-marca-morado"
+            className="rounded-full border border-neutral-200 px-7 py-3 text-center text-sm font-bold text-neutral-800 transition hover:border-marca-morado hover:text-marca-morado"
           >
             Quiero ayudar
           </Link>

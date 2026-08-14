@@ -18,13 +18,13 @@ export default async function Login({
   const { next } = await searchParams;
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-nube px-5 py-12">
+    <main className="grid min-h-dvh place-items-center bg-nube px-4 py-10 sm:px-5 sm:py-12">
       <div className="w-full max-w-sm">
         <div className="flex justify-center">
           <Logo />
         </div>
 
-        <div className="mt-8 rounded-3xl bg-white p-8 shadow-xl ring-1 ring-neutral-100">
+        <div className="mt-8 rounded-3xl bg-white p-6 shadow-xl ring-1 ring-neutral-100 sm:p-8">
           <h1 className="text-xl font-extrabold tracking-tight">Panel interno</h1>
           <p className="mt-1 text-sm text-neutral-500">
             Solo para el equipo de verificación y conexión.

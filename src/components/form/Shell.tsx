@@ -22,12 +22,12 @@ export function FormShell({
     <>
       <Header />
       <main className="bg-nube pb-20">
-        <div className={`bg-linear-to-r ${franja} px-5 py-12 text-white`}>
+        <div className={`bg-linear-to-r ${franja} px-5 py-8 text-white sm:py-12`}>
           <div className="mx-auto max-w-2xl">
             <Link href="/" className="text-sm font-semibold text-white/80 transition hover:text-white">
               ← Volver al inicio
             </Link>
-            <h1 className="mt-3 text-4xl font-extrabold tracking-tight">{title}</h1>
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">{title}</h1>
             <p className="mt-2 max-w-xl text-white/90">{subtitle}</p>
           </div>
         </div>

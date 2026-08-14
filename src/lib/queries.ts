@@ -1,10 +1,15 @@
 import 'server-only';
 
-import { and, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
 
 import { connections, db, events, offers, requests } from '@/db';
 import type { Connection, LogEvent, Offer, HelpRequest } from '@/db/schema';
-import type { OfferStatus, RequestStatus } from './catalogs';
+import type { OfferStatus, RequestStatus, Urgency } from './catalogs';
+import {
+  OPEN_OFFER_STATUSES,
+  OPEN_REQUEST_STATUSES,
+  type DuplicateCase,
+} from './duplicates';
 import { suggestionsForRequest, type Suggestion } from './matching';
 
 /** Maximum number of active offers loaded for in-memory scoring. */
@@ -12,17 +17,167 @@ const MAX_CANDIDATES = 500;
 
 export const PAGE_SIZE = 25;
 
+/* -------------------------------------------------------- Duplicate phone -- */
+
+export async function findOpenRequestByPhone(phone: string) {
+  const [row] = await db
+    .select({ id: requests.id, number: requests.number })
+    .from(requests)
+    .where(and(eq(requests.phone, phone), inArray(requests.status, [...OPEN_REQUEST_STATUSES])))
+    .orderBy(desc(requests.createdAt))
+    .limit(1);
+
+  return row ?? null;
+}
+
+export async function findOpenOfferByPhone(phone: string) {
+  const [row] = await db
+    .select({ id: offers.id, number: offers.number, status: offers.status })
+    .from(offers)
+    .where(and(eq(offers.phone, phone), inArray(offers.status, [...OPEN_OFFER_STATUSES])))
+    .limit(1);
+
+  return row ?? null;
+}
+
+export async function getDuplicateCasesForRequest(
+  phone: string,
+  excludeId: string,
+): Promise<DuplicateCase[]> {
+  const [otherRequests, openOffers] = await Promise.all([
+    db
+      .select({ id: requests.id, number: requests.number, status: requests.status })
+      .from(requests)
+      .where(
+        and(
+          eq(requests.phone, phone),
+          ne(requests.id, excludeId),
+          inArray(requests.status, [...OPEN_REQUEST_STATUSES]),
+        ),
+      )
+      .orderBy(desc(requests.createdAt)),
+    db
+      .select({ id: offers.id, number: offers.number, status: offers.status })
+      .from(offers)
+      .where(and(eq(offers.phone, phone), inArray(offers.status, [...OPEN_OFFER_STATUSES]))),
+  ]);
+
+  return [
+    ...otherRequests.map((r) => ({ kind: 'request' as const, ...r })),
+    ...openOffers.map((o) => ({ kind: 'offer' as const, ...o })),
+  ];
+}
+
+export async function getDuplicateCasesForOffer(phone: string): Promise<DuplicateCase[]> {
+  const openRequests = await db
+    .select({ id: requests.id, number: requests.number, status: requests.status })
+    .from(requests)
+    .where(and(eq(requests.phone, phone), inArray(requests.status, [...OPEN_REQUEST_STATUSES])))
+    .orderBy(desc(requests.createdAt));
+
+  return openRequests.map((r) => ({ kind: 'request' as const, ...r }));
+}
+
+/** Batch lookup for list rows: which request IDs have another open case on the same phone. */
+export async function getRequestIdsWithDuplicatePhone(
+  items: { id: string; phone: string }[],
+): Promise<Set<string>> {
+  if (items.length === 0) return new Set();
+
+  const phones = [...new Set(items.map((i) => i.phone))];
+  const [openRequests, openOffers] = await Promise.all([
+    db
+      .select({ id: requests.id, phone: requests.phone })
+      .from(requests)
+      .where(and(inArray(requests.phone, phones), inArray(requests.status, [...OPEN_REQUEST_STATUSES]))),
+    db
+      .select({ phone: offers.phone })
+      .from(offers)
+      .where(and(inArray(offers.phone, phones), inArray(offers.status, [...OPEN_OFFER_STATUSES]))),
+  ]);
+
+  const requestsByPhone = new Map<string, string[]>();
+  for (const row of openRequests) {
+    const ids = requestsByPhone.get(row.phone) ?? [];
+    ids.push(row.id);
+    requestsByPhone.set(row.phone, ids);
+  }
+
+  const phonesWithOpenOffer = new Set(openOffers.map((o) => o.phone));
+  const flagged = new Set<string>();
+
+  for (const item of items) {
+    const siblings = (requestsByPhone.get(item.phone) ?? []).filter((id) => id !== item.id);
+    if (siblings.length > 0 || phonesWithOpenOffer.has(item.phone)) {
+      flagged.add(item.id);
+    }
+  }
+
+  return flagged;
+}
+
+/** Batch lookup for offer list rows: open requests on the same phone. */
+export async function getOfferIdsWithDuplicatePhone(
+  items: { id: string; phone: string }[],
+): Promise<Set<string>> {
+  if (items.length === 0) return new Set();
+
+  const phones = [...new Set(items.map((i) => i.phone))];
+  const openRequests = await db
+    .select({ phone: requests.phone })
+    .from(requests)
+    .where(and(inArray(requests.phone, phones), inArray(requests.status, [...OPEN_REQUEST_STATUSES])));
+
+  const phonesWithOpenRequest = new Set(openRequests.map((r) => r.phone));
+  const flagged = new Set<string>();
+
+  for (const item of items) {
+    if (phonesWithOpenRequest.has(item.phone)) flagged.add(item.id);
+  }
+
+  return flagged;
+}
+
 /* ------------------------------------------------------------- Requests -- */
 
 export type RequestFilters = {
   status?: RequestStatus;
   search?: string;
   page?: number;
+  department?: string;
+  municipality?: string;
+  urgency?: Urgency;
 };
 
-export async function listRequests({ status, search, page = 1 }: RequestFilters) {
+const requestOrder = [
+  sql`case ${requests.status}
+        when 'received' then 0
+        when 'contacted' then 1
+        when 'verified' then 2
+        when 'connected' then 3
+        when 'resolved' then 4
+        else 5 end`,
+  sql`case ${requests.urgency}
+        when 'immediate' then 0
+        when 'today' then 1
+        when 'this_week' then 2
+        else 3 end`,
+  requests.createdAt,
+] as const;
+
+export async function listRequests({
+  status,
+  search,
+  page = 1,
+  department,
+  municipality,
+  urgency,
+}: RequestFilters) {
   const conditions = [];
   if (status) conditions.push(eq(requests.status, status));
+  if (department) conditions.push(eq(requests.department, department));
+  if (municipality) conditions.push(eq(requests.municipality, municipality));
+  if (urgency) conditions.push(eq(requests.urgency, urgency));
   if (search?.trim()) {
     const pattern = `%${search.trim()}%`;
     conditions.push(
@@ -41,28 +196,23 @@ export async function listRequests({ status, search, page = 1 }: RequestFilters)
       .select()
       .from(requests)
       .where(where)
-      // Prioritize unattended urgent requests, then the oldest requests.
-      .orderBy(
-        sql`case ${requests.status}
-              when 'received' then 0
-              when 'contacted' then 1
-              when 'verified' then 2
-              when 'connected' then 3
-              when 'resolved' then 4
-              else 5 end`,
-        sql`case ${requests.urgency}
-              when 'immediate' then 0
-              when 'today' then 1
-              when 'this_week' then 2
-              else 3 end`,
-        requests.createdAt,
-      )
+      .orderBy(...requestOrder)
       .limit(PAGE_SIZE)
       .offset((page - 1) * PAGE_SIZE),
     db.select({ n: count() }).from(requests).where(where),
   ]);
 
   return { rows, total: total?.n ?? 0, page, pages: Math.max(1, Math.ceil((total?.n ?? 0) / PAGE_SIZE)) };
+}
+
+/** Pending requests for the admin dashboard, ordered by operational priority. */
+export async function listPendingRequests(limit = 8) {
+  return db
+    .select()
+    .from(requests)
+    .where(inArray(requests.status, ['received', 'contacted', 'verified']))
+    .orderBy(...requestOrder)
+    .limit(limit);
 }
 
 export type RequestDetail = {
