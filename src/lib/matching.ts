@@ -1,60 +1,59 @@
-import { DISPONIBILIDAD_CUBRE, RECURSOS, type Disponibilidad, type TipoRecurso } from './catalogos';
-import type { Oferta, Solicitud } from '@/db/schema';
+import { AVAILABILITY_COVERS, RESOURCES, type Availability, type ResourceType } from './catalogs';
+import type { Offer, HelpRequest } from '@/db/schema';
 
 /**
- * Motor de sugerencias.
+ * Suggestion engine.
  *
- * No asigna nada: ordena candidatos y explica por qué, para que un operador
- * confirme con un clic. Esa decisión es deliberada — un match equivocado en una
- * emergencia le llega a una persona real, así que la máquina propone y una
- * persona dispone.
+ * It does not assign anything: it ranks candidates and explains why so an
+ * operator can confirm with one click. This is deliberate: a mistaken match in
+ * an emergency affects a real person, so the machine proposes and a person decides.
  *
- * El puntaje va de 0 a 100 y se reparte así:
- *   45  qué tanto de lo que la persona necesita alcanza a cubrir el voluntario
- *   30  qué tan cerca está
- *   15  si su disponibilidad alcanza para la urgencia de la solicitud
- *   10  confianza: si ya está verificado y qué tan cargado está
+ * Scores range from 0 to 100:
+ *   45  resource coverage
+ *   30  location proximity
+ *   15  availability against request urgency
+ *   10  trust based on verification and current workload
  */
 
-export const PESOS = {
-  recursos: 45,
-  ubicacion: 30,
-  tiempo: 15,
-  confianza: 10,
+export const WEIGHTS = {
+  resources: 45,
+  location: 30,
+  time: 15,
+  trust: 10,
 } as const;
 
-/** Umbral por debajo del cual no vale la pena mostrarle el candidato al operador. */
-export const SCORE_MINIMO = 35;
+/** Do not show suggestions below this score to the operator. */
+export const MIN_SCORE = 35;
 
-/** Máximo de conexiones activas antes de considerar que un voluntario está saturado. */
-export const CARGA_MAXIMA = 3;
+/** Maximum active connections before considering a volunteer overloaded. */
+export const MAX_LOAD = 3;
 
-export type Sugerencia = {
-  oferta: Oferta;
+export type Suggestion = {
+  offer: Offer;
   score: number;
-  razones: string[];
-  advertencias: string[];
+  reasons: string[];
+  warnings: string[];
 };
 
-type ContextoMatching = {
-  /** oferta.id -> número de conexiones activas (propuesta/aceptada) que ya tiene */
-  carga?: Map<string, number>;
-  /** ids de ofertas ya vinculadas a esta solicitud (para no repetir la propuesta) */
-  yaVinculadas?: Set<string>;
+type MatchingContext = {
+  /** offer.id -> current proposed or accepted connection count */
+  load?: Map<string, number>;
+  /** Offer IDs already linked to this request to avoid duplicate suggestions. */
+  linkedIds?: Set<string>;
 };
 
-/** Normaliza un nombre de lugar: "Bogotá D.C. " y "bogota dc" deben cruzarse. */
-export function normalizarLugar(valor: string | null | undefined): string {
-  if (!valor) return '';
-  return valor
+/** Normalizes place names so variants such as "Bogotá D.C." match "bogota dc". */
+export function normalizeLocation(value: string | null | undefined): string {
+  if (!value) return '';
+  return value
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '');
 }
 
-/** Distancia en km entre dos coordenadas (fórmula de Haversine). */
-export function distanciaKm(
+/** Distance in kilometers between two coordinates using the Haversine formula. */
+export function distanceKm(
   aLat: number,
   aLng: number,
   bLat: number,
@@ -70,148 +69,148 @@ export function distanciaKm(
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-function interseccion(a: readonly TipoRecurso[], b: readonly TipoRecurso[]): TipoRecurso[] {
+function intersection(a: readonly ResourceType[], b: readonly ResourceType[]): ResourceType[] {
   const setB = new Set(b);
   return a.filter((t) => setB.has(t));
 }
 
-function diasDesde(fecha: Date): number {
-  return (Date.now() - fecha.getTime()) / 86_400_000;
+function daysSince(date: Date): number {
+  return (Date.now() - date.getTime()) / 86_400_000;
 }
 
 /**
- * Puntúa una pareja necesidad/capacidad.
- * Devuelve `null` cuando el cruce no tiene sentido y no debe llegar al panel.
+ * Scores a request and offer pair.
+ * Returns `null` when the pair should not reach the admin panel.
  */
-export function puntuar(
-  solicitud: Solicitud,
-  oferta: Oferta,
-  ctx: ContextoMatching = {},
-): Sugerencia | null {
-  // --- Filtros duros -------------------------------------------------------
-  if (oferta.estado === 'pausada' || oferta.estado === 'archivada') return null;
-  if (ctx.yaVinculadas?.has(oferta.id)) return null;
+export function scoreMatch(
+  request: HelpRequest,
+  offer: Offer,
+  ctx: MatchingContext = {},
+): Suggestion | null {
+  // --- Hard filters --------------------------------------------------------
+  if (offer.status === 'paused' || offer.status === 'archived') return null;
+  if (ctx.linkedIds?.has(offer.id)) return null;
 
-  const comunes = interseccion(solicitud.tipos, oferta.tipos);
-  if (comunes.length === 0) return null;
+  const sharedTypes = intersection(request.types, offer.types);
+  if (sharedTypes.length === 0) return null;
 
-  const razones: string[] = [];
-  const advertencias: string[] = [];
+  const reasons: string[] = [];
+  const warnings: string[] = [];
 
-  // --- 1. Recursos ---------------------------------------------------------
-  const cobertura = comunes.length / solicitud.tipos.length;
-  let score = PESOS.recursos * cobertura;
+  // --- 1. Resources --------------------------------------------------------
+  const coverage = sharedTypes.length / request.types.length;
+  let score = WEIGHTS.resources * coverage;
 
-  const listaComunes = comunes.map((t) => RECURSOS[t].panel.toLowerCase()).join(', ');
-  razones.push(
-    cobertura === 1
-      ? `Cubre todo lo que pidieron (${listaComunes})`
-      : `Cubre ${comunes.length} de ${solicitud.tipos.length}: ${listaComunes}`,
+  const sharedTypeList = sharedTypes.map((t) => RESOURCES[t].internal.toLowerCase()).join(', ');
+  reasons.push(
+    coverage === 1
+      ? `Cubre todo lo que pidieron (${sharedTypeList})`
+      : `Cubre ${sharedTypes.length} de ${request.types.length}: ${sharedTypeList}`,
   );
 
-  // --- 2. Ubicación --------------------------------------------------------
-  const mismoMunicipio = normalizarLugar(solicitud.municipio) === normalizarLugar(oferta.municipio);
-  const mismoDepartamento =
-    normalizarLugar(solicitud.departamento) === normalizarLugar(oferta.departamento);
-  const radio = oferta.radioKm;
+  // --- 2. Location ---------------------------------------------------------
+  const sameMunicipality = normalizeLocation(request.municipality) === normalizeLocation(offer.municipality);
+  const sameDepartment =
+    normalizeLocation(request.department) === normalizeLocation(offer.department);
+  const radius = offer.radiusKm;
 
-  const hayCoordenadas =
-    solicitud.lat != null && solicitud.lng != null && oferta.lat != null && oferta.lng != null;
+  const hasCoordinates =
+    request.lat != null && request.lng != null && offer.lat != null && offer.lng != null;
 
-  if (hayCoordenadas) {
-    const km = distanciaKm(solicitud.lat!, solicitud.lng!, oferta.lat!, oferta.lng!);
-    if (km > radio) return null; // se sale de lo que dijo que puede desplazarse
-    // 30 puntos si está encima, decayendo hasta 0 en el borde de su radio.
-    score += PESOS.ubicacion * (1 - km / Math.max(radio, 1));
-    razones.push(`Está a ${km < 1 ? 'menos de 1' : Math.round(km)} km`);
-  } else if (mismoMunicipio) {
-    score += PESOS.ubicacion;
-    const mismaZona =
-      solicitud.zona && oferta.zona && normalizarLugar(solicitud.zona) === normalizarLugar(oferta.zona);
-    razones.push(
-      mismaZona
-        ? `Mismo municipio y misma zona (${oferta.zona})`
-        : `Está en ${oferta.municipio}, el mismo municipio`,
+  if (hasCoordinates) {
+    const km = distanceKm(request.lat!, request.lng!, offer.lat!, offer.lng!);
+    if (km > radius) return null; // It exceeds the declared travel radius.
+    // 30 points at the same location, decreasing to 0 at the radius limit.
+    score += WEIGHTS.location * (1 - km / Math.max(radius, 1));
+    reasons.push(`Está a ${km < 1 ? 'menos de 1' : Math.round(km)} km`);
+  } else if (sameMunicipality) {
+    score += WEIGHTS.location;
+    const sameZone =
+      request.zone && offer.zone && normalizeLocation(request.zone) === normalizeLocation(offer.zone);
+    reasons.push(
+      sameZone
+        ? `Mismo municipio y misma zona (${offer.zone})`
+        : `Está en ${offer.municipality}, el mismo municipio`,
     );
-  } else if (mismoDepartamento && radio >= 50) {
-    score += PESOS.ubicacion * 0.4;
-    razones.push(`Está en ${oferta.municipio} y dijo que puede desplazarse ${radio === 999 ? 'a cualquier lugar' : `hasta ${radio} km`}`);
-    advertencias.push('Es de otro municipio: confirma el desplazamiento antes de conectar.');
-  } else if (mismoDepartamento) {
-    score += PESOS.ubicacion * 0.15;
-    advertencias.push(
-      `Está en ${oferta.municipio} y solo se desplaza hasta ${radio} km. Puede que no alcance.`,
+  } else if (sameDepartment && radius >= 50) {
+    score += WEIGHTS.location * 0.4;
+    reasons.push(`Está en ${offer.municipality} y dijo que puede desplazarse ${radius === 999 ? 'a cualquier lugar' : `hasta ${radius} km`}`);
+    warnings.push('Es de otro municipio: confirma el desplazamiento antes de conectar.');
+  } else if (sameDepartment) {
+    score += WEIGHTS.location * 0.15;
+    warnings.push(
+      `Está en ${offer.municipality} y solo se desplaza hasta ${radius} km. Puede que no alcance.`,
     );
   } else {
-    // Otro departamento: solo tiene sentido para recursos que viajan (dinero,
-    // conocimientos, información, contactos) o si dijo que va a cualquier lado.
-    const viajaBien: TipoRecurso[] = ['dinero', 'conocimientos', 'informacion', 'contactos', 'profesion'];
-    const remoto = comunes.some((t) => viajaBien.includes(t));
-    if (!remoto && radio !== 999) return null;
-    razones.push('Puede ayudar a distancia');
-    advertencias.push(`Está en otro departamento (${oferta.departamento}).`);
+    // A different department only works for portable resources or offers that
+    // can travel anywhere.
+    const travelsWell: ResourceType[] = ['money', 'knowledge', 'information', 'contacts', 'profession'];
+    const isRemote = sharedTypes.some((t) => travelsWell.includes(t));
+    if (!isRemote && radius !== 999) return null;
+    reasons.push('Puede ayudar a distancia');
+    warnings.push(`Está en otro departamento (${offer.department}).`);
   }
 
-  // --- 3. Tiempo -----------------------------------------------------------
-  const cubreUrgencia = (oferta.disponibilidad as Disponibilidad[]).some((d) =>
-    DISPONIBILIDAD_CUBRE[d].includes(solicitud.urgencia),
+  // --- 3. Time -------------------------------------------------------------
+  const coversUrgency = (offer.availability as Availability[]).some((d) =>
+    AVAILABILITY_COVERS[d].includes(request.urgency),
   );
-  if (cubreUrgencia) {
-    score += PESOS.tiempo;
-    razones.push('Su disponibilidad alcanza para la urgencia de esta solicitud');
+  if (coversUrgency) {
+    score += WEIGHTS.time;
+    reasons.push('Su disponibilidad alcanza para la urgencia de esta solicitud');
   } else {
-    advertencias.push('Su disponibilidad no cubre esta urgencia. Puede que llegue tarde.');
+    warnings.push('Su disponibilidad no cubre esta urgencia. Puede que llegue tarde.');
   }
 
-  // --- 4. Confianza --------------------------------------------------------
-  if (oferta.estado === 'verificada') {
-    score += PESOS.confianza * 0.7;
-    razones.push('Voluntario ya verificado');
+  // --- 4. Trust ------------------------------------------------------------
+  if (offer.status === 'verified') {
+    score += WEIGHTS.trust * 0.7;
+    reasons.push('Voluntario ya verificado');
   } else {
-    advertencias.push('Este voluntario todavía no ha sido verificado.');
+    warnings.push('Este voluntario todavía no ha sido verificado.');
   }
 
-  const carga = ctx.carga?.get(oferta.id) ?? 0;
-  if (carga === 0) {
-    score += PESOS.confianza * 0.3;
-  } else if (carga >= CARGA_MAXIMA) {
+  const load = ctx.load?.get(offer.id) ?? 0;
+  if (load === 0) {
+    score += WEIGHTS.trust * 0.3;
+  } else if (load >= MAX_LOAD) {
     score -= 10;
-    advertencias.push(`Ya tiene ${carga} conexiones activas. Está saturado.`);
+    warnings.push(`Ya tiene ${load} conexiones activas. Está saturado.`);
   }
 
-  // Una oferta de hace tres semanas probablemente ya no está disponible.
-  const antiguedad = diasDesde(oferta.creadoEn);
-  if (antiguedad > 21) {
+  // An offer from three weeks ago is likely no longer available.
+  const ageInDays = daysSince(offer.createdAt);
+  if (ageInDays > 21) {
     score -= 8;
-    advertencias.push(`Se registró hace ${Math.round(antiguedad)} días. Confirma que sigue disponible.`);
+    warnings.push(`Se registró hace ${Math.round(ageInDays)} días. Confirma que sigue disponible.`);
   }
 
   return {
-    oferta,
+    offer,
     score: Math.max(0, Math.min(100, Math.round(score))),
-    razones,
-    advertencias,
+    reasons,
+    warnings,
   };
 }
 
-/** Candidatos ordenados de mejor a peor para una solicitud. */
-export function sugerenciasParaSolicitud(
-  solicitud: Solicitud,
-  ofertas: Oferta[],
-  ctx: ContextoMatching = {},
-  limite = 10,
-): Sugerencia[] {
-  return ofertas
-    .map((o) => puntuar(solicitud, o, ctx))
-    .filter((s): s is Sugerencia => s !== null && s.score >= SCORE_MINIMO)
+/** Candidates ordered from best to worst for a request. */
+export function suggestionsForRequest(
+  request: HelpRequest,
+  offers: Offer[],
+  ctx: MatchingContext = {},
+  limit = 10,
+): Suggestion[] {
+  return offers
+    .map((o) => scoreMatch(request, o, ctx))
+    .filter((s): s is Suggestion => s !== null && s.score >= MIN_SCORE)
     .sort((a, b) => b.score - a.score)
-    .slice(0, limite);
+    .slice(0, limit);
 }
 
-/** Etiqueta cualitativa del puntaje, para pintar el semáforo en el panel. */
-export function calidadDelMatch(score: number): { label: string; clase: string } {
-  if (score >= 80) return { label: 'Excelente', clase: 'bg-emerald-100 text-emerald-800 ring-emerald-300' };
-  if (score >= 60) return { label: 'Bueno', clase: 'bg-sky-100 text-sky-800 ring-sky-300' };
-  if (score >= 45) return { label: 'Aceptable', clase: 'bg-amber-100 text-amber-800 ring-amber-300' };
-  return { label: 'Débil', clase: 'bg-neutral-100 text-neutral-700 ring-neutral-300' };
+/** Qualitative score label for the admin panel indicator. */
+export function matchQuality(score: number): { label: string; className: string } {
+  if (score >= 80) return { label: 'Excelente', className: 'bg-emerald-100 text-emerald-800 ring-emerald-300' };
+  if (score >= 60) return { label: 'Bueno', className: 'bg-sky-100 text-sky-800 ring-sky-300' };
+  if (score >= 45) return { label: 'Aceptable', className: 'bg-amber-100 text-amber-800 ring-amber-300' };
+  return { label: 'Débil', className: 'bg-neutral-100 text-neutral-700 ring-neutral-300' };
 }

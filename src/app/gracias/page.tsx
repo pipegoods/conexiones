@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { Encabezado } from '@/components/Encabezado';
-import { PieDePagina } from '@/components/PieDePagina';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import {
-  enlaceEquipo,
-  folioOferta,
-  folioSolicitud,
-  mensajeBienvenidaOferta,
-  mensajeBienvenidaSolicitud,
+  teamLink,
+  offerCode,
+  requestCode,
+  offerWelcomeMessage,
+  requestWelcomeMessage,
 } from '@/lib/whatsapp';
 
 export const metadata: Metadata = {
@@ -17,20 +17,22 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams: Promise<{ tipo?: string; numero?: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 };
 
-export default async function Gracias({ searchParams }: Props) {
-  const { tipo, numero } = await searchParams;
-  const esOferta = tipo === 'oferta';
-  const n = Number(numero);
-  const folio = Number.isFinite(n) && n > 0 ? (esOferta ? folioOferta(n) : folioSolicitud(n)) : null;
+export default async function ThankYou({ searchParams }: Props) {
+  const params = await searchParams;
+  const kind = params.tipo;
+  const number = params.numero;
+  const isOffer = kind === 'oferta';
+  const n = Number(number);
+  const code = Number.isFinite(n) && n > 0 ? (isOffer ? offerCode(n) : requestCode(n)) : null;
 
-  const whatsapp = folio
-    ? enlaceEquipo(esOferta ? mensajeBienvenidaOferta(n) : mensajeBienvenidaSolicitud(n))
+  const whatsappLink = code
+    ? teamLink(isOffer ? offerWelcomeMessage(n) : requestWelcomeMessage(n))
     : null;
 
-  const pasos = esOferta
+  const steps = isOffer
     ? [
         'Guardamos lo que puedes aportar y en qué zona te mueves.',
         'Cuando llegue una necesidad verificada que encaje contigo, te escribimos por WhatsApp.',
@@ -46,48 +48,48 @@ export default async function Gracias({ searchParams }: Props) {
 
   return (
     <>
-      <Encabezado />
+      <Header />
       <main className="bg-nube">
         <div className="mx-auto max-w-2xl px-5 py-16">
           <div className="rounded-3xl bg-white p-8 text-center shadow-xl ring-1 ring-neutral-100 sm:p-12">
             <div
               className={`mx-auto grid h-20 w-20 place-items-center rounded-full text-4xl ${
-                esOferta ? 'bg-emerald-50' : 'bg-pink-50'
+                isOffer ? 'bg-emerald-50' : 'bg-pink-50'
               }`}
             >
-              <span aria-hidden="true">{esOferta ? '🤝' : '💌'}</span>
+              <span aria-hidden="true">{isOffer ? '🤝' : '💌'}</span>
             </div>
 
             <h1 className="mt-6 text-3xl font-extrabold tracking-tight">
-              {esOferta ? '¡Gracias por ponerte a disposición!' : 'Recibimos tu solicitud'}
+              {isOffer ? '¡Gracias por ponerte a disposición!' : 'Recibimos tu solicitud'}
             </h1>
 
-            {folio && (
+            {code && (
               <p className="mt-4 inline-block rounded-full bg-neutral-100 px-4 py-2 font-mono text-sm font-bold text-tinta">
-                {folio}
+                {code}
               </p>
             )}
 
             <p className="mt-4 leading-relaxed text-neutral-600">
-              {esOferta
+              {isOffer
                 ? 'Ya haces parte de la red. Guarda este código: es tu referencia si necesitas actualizar o retirar tu registro.'
                 : 'Guarda este código. Es la referencia de tu caso cuando hablemos contigo por WhatsApp.'}
             </p>
 
             <ol className="mt-9 space-y-4 text-left">
-              {pasos.map((paso, i) => (
-                <li key={paso} className="flex gap-4">
+              {steps.map((step, i) => (
+                <li key={step} className="flex gap-4">
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-violet-100 text-sm font-bold text-marca-morado">
                     {i + 1}
                   </span>
-                  <span className="text-sm leading-relaxed text-neutral-700">{paso}</span>
+                  <span className="text-sm leading-relaxed text-neutral-700">{step}</span>
                 </li>
               ))}
             </ol>
 
-            {whatsapp && (
+            {whatsappLink && (
               <a
-                href={whatsapp}
+                href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-9 inline-block rounded-2xl bg-[#25D366] px-7 py-4 font-bold text-white shadow-lg transition hover:brightness-105"
@@ -97,7 +99,7 @@ export default async function Gracias({ searchParams }: Props) {
             )}
 
             <p className="mt-8 text-sm text-neutral-500">
-              {esOferta ? (
+              {isOffer ? (
                 <>
                   ¿También necesitas algo?{' '}
                   <Link href="/necesito-ayuda" className="font-semibold text-marca-morado hover:underline">
@@ -124,7 +126,7 @@ export default async function Gracias({ searchParams }: Props) {
           </div>
         </div>
       </main>
-      <PieDePagina />
+      <Footer />
     </>
   );
 }

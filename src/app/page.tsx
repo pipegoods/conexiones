@@ -1,120 +1,125 @@
 import Link from 'next/link';
 
-import { Encabezado } from '@/components/Encabezado';
-import { PieDePagina } from '@/components/PieDePagina';
-import { RECURSOS, type TipoRecurso } from '@/lib/catalogos';
-import { obtenerCifras } from '@/lib/cifras';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
+import { RESOURCES, type ResourceType } from '@/lib/catalogs';
+import { getStats } from '@/lib/stats';
 
-/** Las cifras se recalculan cada minuto: suficiente para sentirse vivo sin castigar la base. */
+/** Statistics refresh every minute: responsive enough without overloading the database. */
 export const revalidate = 60;
 
-const NECESIDADES_DESTACADAS: TipoRecurso[] = [
-  'transporte',
-  'alimentos',
-  'alojamiento',
-  'herramientas',
-  'salud',
-  'apoyo_psicologico',
-  'informacion',
-  'profesion',
+const FEATURED_NEEDS: ResourceType[] = [
+  'transport',
+  'food',
+  'accommodation',
+  'tools',
+  'health',
+  'psychological_support',
+  'information',
+  'profession',
 ];
 
-const APORTES_DESTACADOS: TipoRecurso[] = [
-  'tiempo',
-  'profesion',
-  'transporte',
-  'herramientas',
-  'espacio',
-  'alimentos',
-  'conocimientos',
-  'contactos',
+const FEATURED_CONTRIBUTIONS: ResourceType[] = [
+  'time',
+  'profession',
+  'transport',
+  'tools',
+  'space',
+  'food',
+  'knowledge',
+  'contacts',
 ];
 
-const burbujas = [
-  { emoji: '👥', arriba: '4%', izquierda: '46%', demora: '0s' },
-  { emoji: '🚚', arriba: '17%', izquierda: '86%', demora: '0.8s' },
-  { emoji: '🛠️', arriba: '52%', izquierda: '92%', demora: '1.6s' },
-  { emoji: '🏠', arriba: '58%', izquierda: '10%', demora: '2.4s' },
-  { emoji: '❤️', arriba: '82%', izquierda: '38%', demora: '3.2s' },
+const bubbles = [
+  { emoji: '👥', top: '4%', left: '46%', delay: '0s' },
+  { emoji: '🚚', top: '17%', left: '86%', delay: '0.8s' },
+  { emoji: '🛠️', top: '52%', left: '92%', delay: '1.6s' },
+  { emoji: '🏠', top: '58%', left: '10%', delay: '2.4s' },
+  { emoji: '❤️', top: '82%', left: '38%', delay: '3.2s' },
 ];
 
-const pasos = [
+const steps = [
   {
-    numero: '01',
-    titulo: 'CUÉNTANOS',
-    texto: 'Cuéntanos qué necesitas o qué puedes aportar.',
-    fondo: 'bg-violet-50',
-    icono: <IconoFormulario className="h-8 w-8 text-marca-morado" />,
+    number: '01',
+    title: 'CUÉNTANOS',
+    text: 'Cuéntanos qué necesitas o qué puedes aportar.',
+    background: 'bg-violet-50',
+    icon: <FormIcon className="h-8 w-8 text-marca-morado" />,
   },
   {
-    numero: '02',
-    titulo: 'ENCONTRAMOS',
-    texto: 'Buscamos a las personas, profesionales, empresas u organizaciones adecuadas.',
-    fondo: 'bg-pink-50',
-    icono: <IconoLupa className="h-8 w-8 text-marca-rosa" />,
+    number: '02',
+    title: 'ENCONTRAMOS',
+    text: 'Buscamos a las personas, profesionales, empresas u organizaciones adecuadas.',
+    background: 'bg-pink-50',
+    icon: <MagnifyingGlassIcon className="h-8 w-8 text-marca-rosa" />,
   },
   {
-    numero: '03',
-    titulo: 'CONECTAMOS',
-    texto: 'Ponemos en contacto a quien necesita con quien puede ayudar.',
-    fondo: 'bg-teal-50',
-    icono: <IconoPersonas className="h-8 w-8 text-marca-cian" />,
-  },
-];
-
-const flujo = [
-  { texto: 'Necesidad', color: 'text-marca-morado' },
-  { texto: 'Capacidad', color: 'text-marca-rosa' },
-  { texto: 'Conexión', color: 'text-marca-cian' },
-  { texto: 'Ayuda', color: 'text-marca-verde' },
-];
-
-const preguntasFrecuentes = [
-  {
-    p: '¿Cuánto cuesta usar Conexiones?',
-    r: 'Nada. Ni para quien pide ayuda ni para quien la ofrece. Nunca te vamos a pedir dinero ni datos bancarios: si alguien lo hace en nuestro nombre, es una estafa.',
-  },
-  {
-    p: '¿Qué pasa con mis datos?',
-    r: 'Tus datos personales solo los ve el equipo interno de Conexiones y, si aceptas una conexión, la persona con la que te vamos a conectar. No hay listados públicos con nombres, teléfonos ni direcciones.',
-  },
-  {
-    p: '¿Cómo verifican que una solicitud es real?',
-    r: 'Alguien del equipo se comunica por WhatsApp y confirma que la persona existe, que la necesidad existe y que está en el lugar indicado. Solo después de eso buscamos quién puede ayudar.',
-  },
-  {
-    p: '¿Cuánto me demoro en recibir respuesta?',
-    r: 'Depende del volumen y de la urgencia que marques. Priorizamos las emergencias. Si es una situación de riesgo vital, llama al 123: nosotros no somos un servicio de emergencia.',
-  },
-  {
-    p: 'No tengo dinero, ¿igual puedo ayudar?',
-    r: 'Sí, y de hecho es lo que más falta hace. Un vehículo, unas herramientas, un oficio, un espacio o unas horas de tu tiempo suelen resolver más que una donación.',
+    number: '03',
+    title: 'CONECTAMOS',
+    text: 'Ponemos en contacto a quien necesita con quien puede ayudar.',
+    background: 'bg-teal-50',
+    icon: <PeopleIcon className="h-8 w-8 text-marca-cian" />,
   },
 ];
 
-export default async function Inicio() {
-  const cifras = await obtenerCifras();
+const flow = [
+  { text: 'Necesidad', color: 'text-marca-morado' },
+  { text: 'Capacidad', color: 'text-marca-rosa' },
+  { text: 'Conexión', color: 'text-marca-cian' },
+  { text: 'Ayuda', color: 'text-marca-verde' },
+];
+
+const frequentlyAskedQuestions = [
+  {
+    question: '¿Cuánto cuesta usar Conexiones?',
+    answer:
+      'Nada. Ni para quien pide ayuda ni para quien la ofrece. Nunca te vamos a pedir dinero ni datos bancarios: si alguien lo hace en nuestro nombre, es una estafa.',
+  },
+  {
+    question: '¿Qué pasa con mis datos?',
+    answer:
+      'Tus datos personales solo los ve el equipo interno de Conexiones y, si aceptas una conexión, la persona con la que te vamos a conectar. No hay listados públicos con nombres, teléfonos ni direcciones.',
+  },
+  {
+    question: '¿Cómo verifican que una solicitud es real?',
+    answer:
+      'Alguien del equipo se comunica por WhatsApp y confirma que la persona existe, que la necesidad existe y que está en el lugar indicado. Solo después de eso buscamos quién puede ayudar.',
+  },
+  {
+    question: '¿Cuánto me demoro en recibir respuesta?',
+    answer:
+      'Depende del volumen y de la urgencia que marques. Priorizamos las emergencias. Si es una situación de riesgo vital, llama al 123: nosotros no somos un servicio de emergencia.',
+  },
+  {
+    question: 'No tengo dinero, ¿igual puedo ayudar?',
+    answer:
+      'Sí, y de hecho es lo que más falta hace. Un vehículo, unas herramientas, un oficio, un espacio o unas horas de tu tiempo suelen resolver más que una donación.',
+  },
+];
+
+export default async function Home() {
+  const stats = await getStats();
 
   return (
     <>
-      <Encabezado />
+      <Header />
       <main>
-        <Portada />
-        <ComoFunciona />
-        <DosLados />
-        <RedEnTiempoReal cifras={cifras} />
-        <SobreNosotros />
-        <Preguntas />
-        <LlamadoFinal />
+        <Hero />
+        <HowItWorks />
+        <TwoSides />
+        <LiveStats stats={stats} />
+        <AboutUs />
+        <FAQ />
+        <FinalCallToAction />
       </main>
-      <PieDePagina />
+      <Footer />
     </>
   );
 }
 
-/* ---------------------------------------------------------------- Portada --- */
+/* ------------------------------------------------------------------ Hero --- */
 
-function Portada() {
+function Hero() {
   return (
     <section className="relative overflow-hidden bg-linear-to-b from-white to-nube">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-16 lg:grid-cols-[1.05fr_1fr] lg:py-24">
@@ -131,22 +136,22 @@ function Portada() {
           </p>
 
           <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-            <TarjetaAccion
+            <ActionCard
               href="/necesito-ayuda"
-              titulo="NECESITO AYUDA"
-              descripcion="Solicita la ayuda que tú o alguien más necesita."
-              clase="from-marca-coral to-marca-rosa shadow-marca-rosa/30"
+              title="NECESITO AYUDA"
+              description="Solicita la ayuda que tú o alguien más necesita."
+              className="from-marca-coral to-marca-rosa shadow-marca-rosa/30"
             />
-            <TarjetaAccion
+            <ActionCard
               href="/quiero-ayudar"
-              titulo="QUIERO AYUDAR"
-              descripcion="Pon a disposición lo que sabes hacer, tienes o puedes ofrecer."
-              clase="from-marca-verde-claro to-marca-cian shadow-marca-verde/30"
+              title="QUIERO AYUDAR"
+              description="Pon a disposición lo que sabes hacer, tienes o puedes ofrecer."
+              className="from-marca-verde-claro to-marca-cian shadow-marca-verde/30"
             />
           </div>
 
           <p className="mt-8 flex items-start gap-3 text-sm text-neutral-600">
-            <IconoEscudo className="mt-0.5 h-5 w-5 shrink-0 text-marca-morado" />
+            <ShieldIcon className="mt-0.5 h-5 w-5 shrink-0 text-marca-morado" />
             <span>
               <strong className="font-bold text-tinta">Gratuito, seguro y transparente.</strong>
               <br />
@@ -155,31 +160,31 @@ function Portada() {
           </p>
         </div>
 
-        <CintaDecorativa />
+        <DecorativeRibbon />
       </div>
     </section>
   );
 }
 
-function TarjetaAccion({
+function ActionCard({
   href,
-  titulo,
-  descripcion,
-  clase,
+  title,
+  description,
+  className,
 }: {
   href: string;
-  titulo: string;
-  descripcion: string;
-  clase: string;
+  title: string;
+  description: string;
+  className: string;
 }) {
   return (
     <Link
       href={href}
-      className={`group relative flex-1 overflow-hidden rounded-2xl bg-linear-to-br ${clase} p-6 text-white shadow-xl transition hover:brightness-105 active:scale-[0.99]`}
+      className={`group relative flex-1 overflow-hidden rounded-2xl bg-linear-to-br ${className} p-6 text-white shadow-xl transition hover:brightness-105 active:scale-[0.99]`}
     >
-      <IconoCorazonManos className="h-9 w-9 opacity-95" />
-      <p className="mt-4 text-base font-extrabold tracking-wide">{titulo}</p>
-      <p className="mt-1.5 max-w-[16rem] text-sm leading-snug text-white/85">{descripcion}</p>
+      <HeartHandsIcon className="h-9 w-9 opacity-95" />
+      <p className="mt-4 text-base font-extrabold tracking-wide">{title}</p>
+      <p className="mt-1.5 max-w-[16rem] text-sm leading-snug text-white/85">{description}</p>
       <span
         aria-hidden="true"
         className="absolute bottom-5 right-5 text-xl transition group-hover:translate-x-1"
@@ -190,8 +195,8 @@ function TarjetaAccion({
   );
 }
 
-/** La cinta del hero: el gradiente de marca uniendo iconos sueltos. Puramente decorativa. */
-function CintaDecorativa() {
+/** Hero ribbon: the brand gradient joins separate icons. Purely decorative. */
+function DecorativeRibbon() {
   return (
     <div className="relative hidden aspect-square w-full lg:block" aria-hidden="true">
       <svg viewBox="0 0 400 400" className="absolute inset-0 h-full w-full">
@@ -224,11 +229,11 @@ function CintaDecorativa() {
         ))}
       </svg>
 
-      {burbujas.map((b) => (
+      {bubbles.map((b) => (
         <span
           key={b.emoji}
           className="absolute grid h-16 w-16 animate-flotar place-items-center rounded-full bg-white text-2xl shadow-lg shadow-marca-morado/10 ring-1 ring-neutral-100"
-          style={{ top: b.arriba, left: b.izquierda, animationDelay: b.demora }}
+          style={{ top: b.top, left: b.left, animationDelay: b.delay }}
         >
           {b.emoji}
         </span>
@@ -237,9 +242,9 @@ function CintaDecorativa() {
   );
 }
 
-/* ------------------------------------------------------- Cómo funciona --- */
+/* ---------------------------------------------------------- How it works -- */
 
-function ComoFunciona() {
+function HowItWorks() {
   return (
     <section id="como-funciona" className="bg-nube py-6">
       <div className="mx-auto max-w-6xl px-5">
@@ -252,25 +257,25 @@ function ComoFunciona() {
           </h2>
 
           <ol className="mt-12 grid gap-10 md:grid-cols-3">
-            {pasos.map((p) => (
-              <li key={p.numero} className="text-center">
-                <div className={`mx-auto grid h-20 w-20 place-items-center rounded-full ${p.fondo}`}>
-                  {p.icono}
+            {steps.map((s) => (
+              <li key={s.number} className="text-center">
+                <div className={`mx-auto grid h-20 w-20 place-items-center rounded-full ${s.background}`}>
+                  {s.icon}
                 </div>
                 <p className="mt-5 text-sm font-extrabold tracking-wide text-tinta">
-                  {p.numero}. {p.titulo}
+                  {s.number}. {s.title}
                 </p>
-                <p className="mx-auto mt-2 max-w-[17rem] text-sm leading-relaxed text-neutral-600">{p.texto}</p>
+                <p className="mx-auto mt-2 max-w-[17rem] text-sm leading-relaxed text-neutral-600">{s.text}</p>
               </li>
             ))}
           </ol>
 
           <div className="mt-12 flex justify-center">
             <div className="flex flex-wrap items-center justify-center gap-2 rounded-full bg-white px-6 py-3 shadow-sm ring-1 ring-neutral-100">
-              {flujo.map((f, i) => (
-                <span key={f.texto} className="flex items-center gap-2">
-                  <span className={`text-sm font-bold ${f.color}`}>{f.texto}</span>
-                  {i < flujo.length - 1 && (
+              {flow.map((f, i) => (
+                <span key={f.text} className="flex items-center gap-2">
+                  <span className={`text-sm font-bold ${f.color}`}>{f.text}</span>
+                  {i < flow.length - 1 && (
                     <span aria-hidden="true" className="text-neutral-300">
                       →
                     </span>
@@ -285,70 +290,70 @@ function ComoFunciona() {
   );
 }
 
-/* ------------------------------------------------------------ Dos lados --- */
+/* ------------------------------------------------------------ Two sides -- */
 
-function DosLados() {
+function TwoSides() {
   return (
     <section className="bg-nube py-6">
       <div className="mx-auto grid max-w-6xl gap-6 px-5 lg:grid-cols-2">
-        <PanelLado
-          etiqueta="¿Qué puedes encontrar?"
-          claseEtiqueta="bg-violet-100 text-marca-morado"
-          titulo={
+        <SidePanel
+          label="¿Qué puedes encontrar?"
+          labelClassName="bg-violet-100 text-marca-morado"
+          title={
             <>
               Lo que <span className="text-marca-morado">necesitas</span>,<br />
               cuando lo necesitas.
             </>
           }
-          tipos={NECESIDADES_DESTACADAS}
-          lado="necesito"
+          types={FEATURED_NEEDS}
+          side="seeking"
         />
-        <PanelLado
-          etiqueta="¿Qué puedes aportar?"
-          claseEtiqueta="bg-teal-100 text-teal-700"
-          titulo={
+        <SidePanel
+          label="¿Qué puedes aportar?"
+          labelClassName="bg-teal-100 text-teal-700"
+          title={
             <>
               No necesitas tener dinero
               <br />
               para <span className="text-marca-verde">hacer la diferencia.</span>
             </>
           }
-          tipos={APORTES_DESTACADOS}
-          lado="ofrezco"
+          types={FEATURED_CONTRIBUTIONS}
+          side="offering"
         />
       </div>
     </section>
   );
 }
 
-function PanelLado({
-  etiqueta,
-  claseEtiqueta,
-  titulo,
-  tipos,
-  lado,
+function SidePanel({
+  label,
+  labelClassName,
+  title,
+  types,
+  side,
 }: {
-  etiqueta: string;
-  claseEtiqueta: string;
-  titulo: React.ReactNode;
-  tipos: TipoRecurso[];
-  lado: 'necesito' | 'ofrezco';
+  label: string;
+  labelClassName: string;
+  title: React.ReactNode;
+  types: ResourceType[];
+  side: 'seeking' | 'offering';
 }) {
   return (
     <div className="rounded-3xl bg-white p-8 ring-1 ring-neutral-100">
-      <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${claseEtiqueta}`}>
-        {etiqueta}
+      <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${labelClassName}`}>
+        {label}
       </span>
-      <h2 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight">{titulo}</h2>
+      <h2 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight">{title}</h2>
 
       <ul className="mt-7 grid grid-cols-2 gap-2.5">
-        {tipos.map((t) => (
+        {types.map((t) => (
           <li
             key={t}
             className="flex items-center gap-2.5 rounded-xl bg-neutral-50 px-3.5 py-3 text-sm font-medium text-neutral-700"
           >
-            <span aria-hidden="true">{RECURSOS[t].emoji}</span>
-            {RECURSOS[t][lado]}
+            <span aria-hidden="true">{RESOURCES[t].emoji}</span>
+            {RESOURCES[t][side]}
           </li>
         ))}
       </ul>
@@ -358,18 +363,18 @@ function PanelLado({
   );
 }
 
-/* ------------------------------------------------------ Cifras públicas --- */
+/* ---------------------------------------------------- Public statistics -- */
 
-function RedEnTiempoReal({
-  cifras,
+function LiveStats({
+  stats,
 }: {
-  cifras: { recibidas: number; verificadas: number; conectadas: number; resueltas: number };
+  stats: { received: number; verified: number; connected: number; resolved: number };
 }) {
-  const tarjetas = [
-    { valor: cifras.recibidas, texto: 'Necesidades recibidas', emoji: '👥', fondo: 'bg-violet-50' },
-    { valor: cifras.verificadas, texto: 'Necesidades verificadas', emoji: '🛡️', fondo: 'bg-pink-50' },
-    { valor: cifras.conectadas, texto: 'Ayudas conectadas', emoji: '🤝', fondo: 'bg-sky-50' },
-    { valor: cifras.resueltas, texto: 'Necesidades resueltas', emoji: '💚', fondo: 'bg-emerald-50' },
+  const cards = [
+    { value: stats.received, text: 'Necesidades recibidas', emoji: '👥', background: 'bg-violet-50' },
+    { value: stats.verified, text: 'Necesidades verificadas', emoji: '🛡️', background: 'bg-pink-50' },
+    { value: stats.connected, text: 'Ayudas conectadas', emoji: '🤝', background: 'bg-sky-50' },
+    { value: stats.resolved, text: 'Necesidades resueltas', emoji: '💚', background: 'bg-emerald-50' },
   ];
 
   return (
@@ -380,14 +385,14 @@ function RedEnTiempoReal({
         </p>
 
         <dl className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {tarjetas.map((t) => (
-            <div key={t.texto} className="flex items-center gap-4 rounded-2xl bg-white p-6 ring-1 ring-neutral-100">
-              <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl ${t.fondo}`}>
-                <span aria-hidden="true">{t.emoji}</span>
+          {cards.map((c) => (
+            <div key={c.text} className="flex items-center gap-4 rounded-2xl bg-white p-6 ring-1 ring-neutral-100">
+              <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl ${c.background}`}>
+                <span aria-hidden="true">{c.emoji}</span>
               </span>
               <div>
-                <dd className="text-4xl font-extrabold tracking-tight tabular-nums">{t.valor}</dd>
-                <dt className="mt-0.5 text-sm text-neutral-500">{t.texto}</dt>
+                <dd className="text-4xl font-extrabold tracking-tight tabular-nums">{c.value}</dd>
+                <dt className="mt-0.5 text-sm text-neutral-500">{c.text}</dt>
               </div>
             </div>
           ))}
@@ -401,9 +406,9 @@ function RedEnTiempoReal({
   );
 }
 
-/* -------------------------------------------------------- Sobre / FAQ --- */
+/* ---------------------------------------------------------- About / FAQ -- */
 
-function SobreNosotros() {
+function AboutUs() {
   return (
     <section id="sobre-nosotros" className="bg-nube py-6">
       <div className="mx-auto max-w-6xl px-5">
@@ -449,21 +454,21 @@ function SobreNosotros() {
   );
 }
 
-function Preguntas() {
+function FAQ() {
   return (
     <section id="preguntas" className="bg-nube py-6">
       <div className="mx-auto max-w-3xl px-5 py-10">
         <h2 className="text-center text-3xl font-extrabold tracking-tight">Preguntas frecuentes</h2>
         <div className="mt-8 space-y-3">
-          {preguntasFrecuentes.map((f) => (
-            <details key={f.p} className="group rounded-2xl bg-white p-5 ring-1 ring-neutral-100">
+          {frequentlyAskedQuestions.map((f) => (
+            <details key={f.question} className="group rounded-2xl bg-white p-5 ring-1 ring-neutral-100">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-bold text-tinta">
-                {f.p}
+                {f.question}
                 <span aria-hidden="true" className="text-marca-morado transition group-open:rotate-45">
                   +
                 </span>
               </summary>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-600">{f.r}</p>
+              <p className="mt-3 text-sm leading-relaxed text-neutral-600">{f.answer}</p>
             </details>
           ))}
         </div>
@@ -472,9 +477,9 @@ function Preguntas() {
   );
 }
 
-/* -------------------------------------------------------- Llamado final --- */
+/* ----------------------------------------------------------- Final call -- */
 
-function LlamadoFinal() {
+function FinalCallToAction() {
   return (
     <section id="contacto" className="bg-nube pb-16 pt-6">
       <div className="mx-auto max-w-6xl px-5">
@@ -498,7 +503,7 @@ function LlamadoFinal() {
                 href="/necesito-ayuda"
                 className="group flex items-center gap-3 rounded-2xl bg-linear-to-br from-marca-coral to-marca-rosa px-8 py-5 text-left text-white shadow-lg transition hover:brightness-110"
               >
-                <IconoCorazonManos className="h-7 w-7" />
+                <HeartHandsIcon className="h-7 w-7" />
                 <span>
                   <span className="block text-sm font-extrabold tracking-wide">NECESITO AYUDA</span>
                   <span className="block text-sm text-white/80">Pedir ayuda</span>
@@ -512,7 +517,7 @@ function LlamadoFinal() {
                 href="/quiero-ayudar"
                 className="group flex items-center gap-3 rounded-2xl bg-linear-to-br from-marca-verde-claro to-marca-cian px-8 py-5 text-left text-white shadow-lg transition hover:brightness-110"
               >
-                <IconoCorazonManos className="h-7 w-7" />
+                <HeartHandsIcon className="h-7 w-7" />
                 <span>
                   <span className="block text-sm font-extrabold tracking-wide">QUIERO AYUDAR</span>
                   <span className="block text-sm text-white/80">Ofrecer mi ayuda</span>
@@ -529,9 +534,9 @@ function LlamadoFinal() {
   );
 }
 
-/* ----------------------------------------------------------------- Iconos --- */
+/* ------------------------------------------------------------------- Icons -- */
 
-function IconoCorazonManos({ className = '' }: { className?: string }) {
+function HeartHandsIcon({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className={className} aria-hidden="true">
       <path
@@ -543,7 +548,7 @@ function IconoCorazonManos({ className = '' }: { className?: string }) {
   );
 }
 
-function IconoEscudo({ className = '' }: { className?: string }) {
+function ShieldIcon({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden="true">
       <path d="M12 3l7 3v5.5c0 4.5-3 8-7 9.5-4-1.5-7-5-7-9.5V6l7-3Z" strokeLinejoin="round" />
@@ -552,7 +557,7 @@ function IconoEscudo({ className = '' }: { className?: string }) {
   );
 }
 
-function IconoFormulario({ className = '' }: { className?: string }) {
+function FormIcon({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className={className} aria-hidden="true">
       <path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" strokeLinejoin="round" />
@@ -561,7 +566,7 @@ function IconoFormulario({ className = '' }: { className?: string }) {
   );
 }
 
-function IconoLupa({ className = '' }: { className?: string }) {
+function MagnifyingGlassIcon({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className={className} aria-hidden="true">
       <circle cx="11" cy="11" r="6" />
@@ -571,7 +576,7 @@ function IconoLupa({ className = '' }: { className?: string }) {
   );
 }
 
-function IconoPersonas({ className = '' }: { className?: string }) {
+function PeopleIcon({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className={className} aria-hidden="true">
       <circle cx="9" cy="9" r="3" />

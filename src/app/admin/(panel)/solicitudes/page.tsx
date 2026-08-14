@@ -1,38 +1,39 @@
 import Link from 'next/link';
 
 import {
-  ChipsRecursos,
-  Fecha,
-  HaceCuanto,
-  InsigniaSolicitud,
-  InsigniaUrgencia,
-  Tarjeta,
-  Vacio,
-} from '@/components/admin/Piezas';
-import { ESTADOS_SOLICITUD, ESTADO_SOLICITUD_META, type EstadoSolicitud } from '@/lib/catalogos';
-import { listarSolicitudes } from '@/lib/consultas';
-import { folioSolicitud } from '@/lib/whatsapp';
+  Card,
+  DateDisplay,
+  EmptyState,
+  RequestBadge,
+  ResourceChips,
+  UrgencyBadge,
+} from '@/components/admin/Primitives';
+import { TimeAgo } from '@/components/admin/TimeAgo';
+import { REQUEST_STATUSES, REQUEST_STATUS_META, type RequestStatus } from '@/lib/catalogs';
+import { listRequests } from '@/lib/queries';
+import { requestCode } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
-type Props = {
-  searchParams: Promise<{ estado?: string; q?: string; pagina?: string }>;
+type PageProps = {
+  searchParams: Promise<{ 'estado'?: string; 'pagina'?: string; status?: string; page?: string; q?: string }>;
 };
 
-export default async function Solicitudes({ searchParams }: Props) {
+export default async function Requests({ searchParams }: PageProps) {
   const params = await searchParams;
-  const estado = ESTADOS_SOLICITUD.includes(params.estado as EstadoSolicitud)
-    ? (params.estado as EstadoSolicitud)
+  const statusParam = params['estado'] ?? params.status;
+  const status = REQUEST_STATUSES.includes(statusParam as RequestStatus)
+    ? (statusParam as RequestStatus)
     : undefined;
-  const busqueda = params.q ?? '';
-  const pagina = Math.max(1, Number(params.pagina) || 1);
+  const search = params.q ?? '';
+  const page = Math.max(1, Number(params['pagina'] ?? params.page) || 1);
 
-  const { filas, total, paginas } = await listarSolicitudes({ estado, busqueda, pagina });
+  const { rows, total, pages } = await listRequests({ status, search, page });
 
-  const enlaceFiltro = (e?: EstadoSolicitud) => {
+  const filterLink = (st?: RequestStatus) => {
     const sp = new URLSearchParams();
-    if (e) sp.set('estado', e);
-    if (busqueda) sp.set('q', busqueda);
+    if (st) sp.set('estado', st);
+    if (search) sp.set('q', search);
     const query = sp.toString();
     return `/admin/solicitudes${query ? `?${query}` : ''}`;
   };
@@ -43,39 +44,39 @@ export default async function Solicitudes({ searchParams }: Props) {
         <h1 className="text-2xl font-extrabold tracking-tight">Solicitudes</h1>
         <p className="mt-1 text-sm text-neutral-500">
           {total} {total === 1 ? 'solicitud' : 'solicitudes'}
-          {estado ? ` en estado “${ESTADO_SOLICITUD_META[estado].label}”` : ''}.
+          {status ? ` en estado “${REQUEST_STATUS_META[status].label}”` : ''}.
         </p>
       </div>
 
-      <Tarjeta>
+      <Card>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href={enlaceFiltro()}
+            href={filterLink()}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-              !estado ? 'bg-tinta text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+              !status ? 'bg-tinta text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
             }`}
           >
             Todas
           </Link>
-          {ESTADOS_SOLICITUD.map((e) => (
+          {REQUEST_STATUSES.map((st) => (
             <Link
-              key={e}
-              href={enlaceFiltro(e)}
+              key={st}
+              href={filterLink(st)}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                estado === e ? 'bg-tinta text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                status === st ? 'bg-tinta text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
               }`}
             >
-              <span aria-hidden="true">{ESTADO_SOLICITUD_META[e].emoji}</span> {ESTADO_SOLICITUD_META[e].label}
+              <span aria-hidden="true">{REQUEST_STATUS_META[st].emoji}</span> {REQUEST_STATUS_META[st].label}
             </Link>
           ))}
         </div>
 
         <form method="get" className="mt-4 flex gap-2">
-          {estado && <input type="hidden" name="estado" value={estado} />}
+          {status && <input type="hidden" name="estado" value={status} />}
           <input
             type="search"
             name="q"
-            defaultValue={busqueda}
+            defaultValue={search}
             placeholder="Buscar por nombre, teléfono, municipio o descripción…"
             aria-label="Buscar solicitudes"
             className="flex-1 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm focus:border-marca-morado focus:ring-2 focus:ring-marca-morado/20"
@@ -87,44 +88,44 @@ export default async function Solicitudes({ searchParams }: Props) {
             Buscar
           </button>
         </form>
-      </Tarjeta>
+      </Card>
 
-      {filas.length === 0 ? (
-        <Vacio>No hay solicitudes con esos criterios.</Vacio>
+      {rows.length === 0 ? (
+        <EmptyState>No hay solicitudes con esos criterios.</EmptyState>
       ) : (
         <ul className="space-y-3">
-          {filas.map((s) => (
+          {rows.map((s) => (
             <li key={s.id}>
               <Link
                 href={`/admin/solicitudes/${s.id}`}
                 className="block rounded-2xl bg-white p-5 ring-1 ring-neutral-200 transition hover:ring-marca-morado"
               >
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="font-mono text-sm font-bold text-neutral-400">{folioSolicitud(s.numero)}</span>
-                  <InsigniaSolicitud estado={s.estado} />
-                  <InsigniaUrgencia urgencia={s.urgencia} />
+                  <span className="font-mono text-sm font-bold text-neutral-400">{requestCode(s.number)}</span>
+                  <RequestBadge status={s.status} />
+                  <UrgencyBadge urgency={s.urgency} />
                   <span className="ml-auto text-sm">
-                    <HaceCuanto valor={s.creadoEn} /> · <Fecha valor={s.creadoEn} />
+                    <TimeAgo value={s.createdAt} /> · <DateDisplay value={s.createdAt} />
                   </span>
                 </div>
 
-                <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-neutral-700">{s.descripcion}</p>
+                <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-neutral-700">{s.description}</p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-neutral-500">
-                  <span className="font-semibold text-tinta">{s.nombre}</span>
+                  <span className="font-semibold text-tinta">{s.name}</span>
                   <span>
-                    📍 {s.municipio}
-                    {s.zona ? `, ${s.zona}` : ''}
+                    📍 {s.municipality}
+                    {s.zone ? `, ${s.zone}` : ''}
                   </span>
                   <span>
-                    👥 {s.personasAfectadas} {s.personasAfectadas === 1 ? 'persona' : 'personas'}
+                    👥 {s.affectedPeople} {s.affectedPeople === 1 ? 'persona' : 'personas'}
                   </span>
-                  {s.tieneMenores && <span className="text-amber-700">Hay menores</span>}
-                  {s.tieneAdultosMayores && <span className="text-amber-700">Hay adultos mayores</span>}
+                  {s.hasMinors && <span className="text-amber-700">Hay menores</span>}
+                  {s.hasElderly && <span className="text-amber-700">Hay adultos mayores</span>}
                 </div>
 
                 <div className="mt-3">
-                  <ChipsRecursos tipos={s.tipos} />
+                  <ResourceChips types={s.types} />
                 </div>
               </Link>
             </li>
@@ -132,20 +133,20 @@ export default async function Solicitudes({ searchParams }: Props) {
         </ul>
       )}
 
-      {paginas > 1 && (
+      {pages > 1 && (
         <nav className="flex justify-center gap-2" aria-label="Paginación">
-          {Array.from({ length: paginas }, (_, i) => i + 1).map((p) => {
+          {Array.from({ length: pages }, (_, i) => i + 1).map((p) => {
             const sp = new URLSearchParams();
-            if (estado) sp.set('estado', estado);
-            if (busqueda) sp.set('q', busqueda);
+            if (status) sp.set('estado', status);
+            if (search) sp.set('q', search);
             sp.set('pagina', String(p));
             return (
               <Link
                 key={p}
                 href={`/admin/solicitudes?${sp.toString()}`}
-                aria-current={p === pagina ? 'page' : undefined}
+                aria-current={p === page ? 'page' : undefined}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-                  p === pagina ? 'bg-tinta text-white' : 'bg-white text-neutral-600 ring-1 ring-neutral-200'
+                  p === page ? 'bg-tinta text-white' : 'bg-white text-neutral-600 ring-1 ring-neutral-200'
                 }`}
               >
                 {p}

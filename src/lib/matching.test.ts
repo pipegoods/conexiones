@@ -1,228 +1,228 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { Oferta, Solicitud } from '@/db/schema';
-import { distanciaKm, normalizarLugar, puntuar, sugerenciasParaSolicitud } from './matching';
+import type { Offer, HelpRequest } from '@/db/schema';
+import { distanceKm, normalizeLocation, scoreMatch, suggestionsForRequest } from './matching';
 
-/* Fixtures mínimos: solo lo que el motor realmente lee. */
+/* Minimal fixtures: only values read by the matching engine. */
 
-const HACE_UN_DIA = new Date(Date.now() - 86_400_000);
+const ONE_DAY_AGO = new Date(Date.now() - 86_400_000);
 
-function solicitud(cambios: Partial<Solicitud> = {}): Solicitud {
+function request(changes: Partial<HelpRequest> = {}): HelpRequest {
   return {
     id: 's1',
-    numero: 1,
-    nombre: 'María Restrepo',
-    telefono: '+573001112233',
-    esParaOtraPersona: false,
-    personasAfectadas: 4,
-    tieneMenores: true,
-    tieneAdultosMayores: false,
-    tipos: ['herramientas'],
-    descripcion: 'Se cayó el techo de la cocina.',
-    urgencia: 'hoy',
-    departamento: 'Quindío',
-    municipio: 'Armenia',
-    zona: 'La Esperanza',
-    referenciaDireccion: null,
+    number: 1,
+    name: 'María Restrepo',
+    phone: '+573001112233',
+    isForSomeoneElse: false,
+    affectedPeople: 4,
+    hasMinors: true,
+    hasElderly: false,
+    types: ['tools'],
+    description: 'Se cayó el techo de la cocina.',
+    urgency: 'today',
+    department: 'Quindío',
+    municipality: 'Armenia',
+    zone: 'La Esperanza',
+    addressReference: null,
     lat: null,
     lng: null,
-    estado: 'verificada',
-    notasInternas: null,
-    motivoDescarte: null,
-    aceptaDatos: true,
-    aceptaWhatsapp: true,
-    creadoEn: HACE_UN_DIA,
-    actualizadoEn: HACE_UN_DIA,
-    contactadoEn: null,
-    verificadoEn: null,
-    conectadoEn: null,
-    resueltoEn: null,
-    ...cambios,
-  } as Solicitud;
+    status: 'verified',
+    internalNotes: null,
+    discardReason: null,
+    acceptsDataUse: true,
+    acceptsWhatsapp: true,
+    createdAt: ONE_DAY_AGO,
+    updatedAt: ONE_DAY_AGO,
+    contactedAt: null,
+    verifiedAt: null,
+    connectedAt: null,
+    resolvedAt: null,
+    ...changes,
+  } as HelpRequest;
 }
 
-function oferta(cambios: Partial<Oferta> = {}): Oferta {
+function offer(changes: Partial<Offer> = {}): Offer {
   return {
     id: 'o1',
-    numero: 1,
-    nombre: 'Pedro Gómez',
-    telefono: '+573004445566',
+    number: 1,
+    name: 'Pedro Gómez',
+    phone: '+573004445566',
     email: null,
-    organizacion: null,
-    tipos: ['herramientas'],
-    descripcion: 'Soy carpintero, tengo herramienta propia.',
-    departamento: 'Quindío',
-    municipio: 'Armenia',
-    zona: 'La Esperanza',
-    radioKm: 10,
+    organization: null,
+    types: ['tools'],
+    description: 'Soy carpintero, tengo herramienta propia.',
+    department: 'Quindío',
+    municipality: 'Armenia',
+    zone: 'La Esperanza',
+    radiusKm: 10,
     lat: null,
     lng: null,
-    disponibilidad: ['hoy'],
-    notaDisponibilidad: null,
-    estado: 'verificada',
-    notasInternas: null,
-    aceptaDatos: true,
-    aceptaWhatsapp: true,
-    creadoEn: HACE_UN_DIA,
-    actualizadoEn: HACE_UN_DIA,
-    verificadoEn: HACE_UN_DIA,
-    ...cambios,
-  } as Oferta;
+    availability: ['today'],
+    availabilityNote: null,
+    status: 'verified',
+    internalNotes: null,
+    acceptsDataUse: true,
+    acceptsWhatsapp: true,
+    createdAt: ONE_DAY_AGO,
+    updatedAt: ONE_DAY_AGO,
+    verifiedAt: ONE_DAY_AGO,
+    ...changes,
+  } as Offer;
 }
 
-describe('normalizarLugar', () => {
-  it('cruza el mismo lugar escrito de formas distintas', () => {
-    assert.equal(normalizarLugar('Bogotá D.C.'), normalizarLugar('bogota dc'));
-    assert.equal(normalizarLugar(' Armenia '), normalizarLugar('ARMENIA'));
-    assert.notEqual(normalizarLugar('Armenia'), normalizarLugar('Calarcá'));
+describe('normalizeLocation', () => {
+  it('matches equivalent place-name formats', () => {
+    assert.equal(normalizeLocation('Bogotá D.C.'), normalizeLocation('bogota dc'));
+    assert.equal(normalizeLocation(' Armenia '), normalizeLocation('ARMENIA'));
+    assert.notEqual(normalizeLocation('Armenia'), normalizeLocation('Calarcá'));
   });
 
-  it('no revienta con nulos', () => {
-    assert.equal(normalizarLugar(null), '');
-    assert.equal(normalizarLugar(undefined), '');
-  });
-});
-
-describe('distanciaKm', () => {
-  it('calcula una distancia conocida (Armenia → Pereira ≈ 40 km)', () => {
-    const km = distanciaKm(4.5339, -75.6811, 4.8133, -75.6961);
-    assert.ok(km > 25 && km < 45, `esperaba ~31 km, dio ${km}`);
-  });
-
-  it('da cero para el mismo punto', () => {
-    assert.equal(Math.round(distanciaKm(4.5, -75.6, 4.5, -75.6)), 0);
+  it('handles null values', () => {
+    assert.equal(normalizeLocation(null), '');
+    assert.equal(normalizeLocation(undefined), '');
   });
 });
 
-describe('puntuar — filtros duros', () => {
-  it('descarta a quien no comparte ningún tipo de recurso', () => {
-    assert.equal(puntuar(solicitud({ tipos: ['alimentos'] }), oferta({ tipos: ['transporte'] })), null);
+describe('distanceKm', () => {
+  it('calculates a known distance (Armenia → Pereira ≈ 40 km)', () => {
+    const km = distanceKm(4.5339, -75.6811, 4.8133, -75.6961);
+    assert.ok(km > 25 && km < 45, `expected ~31 km, got ${km}`);
   });
 
-  it('descarta voluntarios pausados o archivados', () => {
-    assert.equal(puntuar(solicitud(), oferta({ estado: 'pausada' })), null);
-    assert.equal(puntuar(solicitud(), oferta({ estado: 'archivada' })), null);
-  });
-
-  it('descarta a quien ya está vinculado a esta solicitud', () => {
-    assert.equal(puntuar(solicitud(), oferta(), { yaVinculadas: new Set(['o1']) }), null);
-  });
-
-  it('descarta a quien queda fuera de su propio radio de desplazamiento', () => {
-    const lejos = puntuar(
-      solicitud({ lat: 4.5339, lng: -75.6811 }),
-      oferta({ lat: 4.8133, lng: -75.6961, radioKm: 5 }),
-    );
-    assert.equal(lejos, null);
-  });
-
-  it('acepta al mismo voluntario si su radio sí alcanza', () => {
-    const cerca = puntuar(
-      solicitud({ lat: 4.5339, lng: -75.6811 }),
-      oferta({ lat: 4.8133, lng: -75.6961, radioKm: 50 }),
-    );
-    assert.ok(cerca);
-  });
-
-  it('descarta otro departamento cuando el recurso no viaja', () => {
-    const fuera = puntuar(
-      solicitud({ tipos: ['alimentos'] }),
-      oferta({ tipos: ['alimentos'], departamento: 'Antioquia', municipio: 'Medellín', radioKm: 10 }),
-    );
-    assert.equal(fuera, null);
-  });
-
-  it('permite otro departamento cuando el recurso sí viaja (dinero, contactos, saber)', () => {
-    const remoto = puntuar(
-      solicitud({ tipos: ['dinero'] }),
-      oferta({ tipos: ['dinero'], departamento: 'Antioquia', municipio: 'Medellín', radioKm: 10 }),
-    );
-    assert.ok(remoto);
-    assert.ok(remoto.advertencias.some((a) => a.includes('otro departamento')));
+  it('returns zero for the same point', () => {
+    assert.equal(Math.round(distanceKm(4.5, -75.6, 4.5, -75.6)), 0);
   });
 });
 
-describe('puntuar — puntaje', () => {
-  it('el caso perfecto saca puntaje alto y sin advertencias', () => {
-    const r = puntuar(solicitud(), oferta());
+describe('scoreMatch — hard filters', () => {
+  it('rejects offers with no shared resource type', () => {
+    assert.equal(scoreMatch(request({ types: ['food'] }), offer({ types: ['transport'] })), null);
+  });
+
+  it('rejects paused or archived volunteers', () => {
+    assert.equal(scoreMatch(request(), offer({ status: 'paused' })), null);
+    assert.equal(scoreMatch(request(), offer({ status: 'archived' })), null);
+  });
+
+  it('rejects offers already linked to the request', () => {
+    assert.equal(scoreMatch(request(), offer(), { linkedIds: new Set(['o1']) }), null);
+  });
+
+  it('rejects offers outside their own travel radius', () => {
+    const distant = scoreMatch(
+      request({ lat: 4.5339, lng: -75.6811 }),
+      offer({ lat: 4.8133, lng: -75.6961, radiusKm: 5 }),
+    );
+    assert.equal(distant, null);
+  });
+
+  it('accepts a volunteer when their radius reaches the request', () => {
+    const nearby = scoreMatch(
+      request({ lat: 4.5339, lng: -75.6811 }),
+      offer({ lat: 4.8133, lng: -75.6961, radiusKm: 50 }),
+    );
+    assert.ok(nearby);
+  });
+
+  it('rejects a different department for non-portable resources', () => {
+    const outside = scoreMatch(
+      request({ types: ['food'] }),
+      offer({ types: ['food'], department: 'Antioquia', municipality: 'Medellín', radiusKm: 10 }),
+    );
+    assert.equal(outside, null);
+  });
+
+  it('allows a different department for portable resources', () => {
+    const remote = scoreMatch(
+      request({ types: ['money'] }),
+      offer({ types: ['money'], department: 'Antioquia', municipality: 'Medellín', radiusKm: 10 }),
+    );
+    assert.ok(remote);
+    assert.ok(remote.warnings.some((a) => a.includes('otro departamento')));
+  });
+});
+
+describe('scoreMatch — scoring', () => {
+  it('gives a high score with no warnings to a perfect match', () => {
+    const r = scoreMatch(request(), offer());
     assert.ok(r);
-    assert.ok(r.score >= 90, `esperaba >=90, dio ${r.score}`);
-    assert.deepEqual(r.advertencias, []);
+    assert.ok(r.score >= 90, `expected >=90, got ${r.score}`);
+    assert.deepEqual(r.warnings, []);
   });
 
-  it('cubrir solo parte de lo pedido baja el puntaje y se explica', () => {
-    const completo = puntuar(solicitud({ tipos: ['herramientas'] }), oferta({ tipos: ['herramientas'] }))!;
-    const parcial = puntuar(
-      solicitud({ tipos: ['herramientas', 'alimentos', 'transporte'] }),
-      oferta({ tipos: ['herramientas'] }),
+  it('reduces and explains the score for partial coverage', () => {
+    const complete = scoreMatch(request({ types: ['tools'] }), offer({ types: ['tools'] }))!;
+    const partial = scoreMatch(
+      request({ types: ['tools', 'food', 'transport'] }),
+      offer({ types: ['tools'] }),
     )!;
 
-    assert.ok(parcial.score < completo.score);
-    assert.ok(parcial.razones.some((r) => r.includes('1 de 3')));
+    assert.ok(partial.score < complete.score);
+    assert.ok(partial.reasons.some((r) => r.includes('1 de 3')));
   });
 
-  it('avisa cuando la disponibilidad no alcanza para la urgencia', () => {
-    const r = puntuar(solicitud({ urgencia: 'inmediata' }), oferta({ disponibilidad: ['fines_de_semana'] }))!;
-    assert.ok(r.advertencias.some((a) => a.includes('no cubre esta urgencia')));
+  it('warns when availability does not meet the urgency', () => {
+    const r = scoreMatch(request({ urgency: 'immediate' }), offer({ availability: ['weekends'] }))!;
+    assert.ok(r.warnings.some((a) => a.includes('no cubre esta urgencia')));
   });
 
-  it('avisa cuando el voluntario no ha sido verificado', () => {
-    const r = puntuar(solicitud(), oferta({ estado: 'nueva' }))!;
-    assert.ok(r.advertencias.some((a) => a.includes('no ha sido verificado')));
-    assert.ok(r.score < puntuar(solicitud(), oferta())!.score);
+  it('warns when the volunteer has not been verified', () => {
+    const r = scoreMatch(request(), offer({ status: 'new' }))!;
+    assert.ok(r.warnings.some((a) => a.includes('no ha sido verificado')));
+    assert.ok(r.score < scoreMatch(request(), offer())!.score);
   });
 
-  it('penaliza a un voluntario saturado', () => {
-    const libre = puntuar(solicitud(), oferta())!;
-    const saturado = puntuar(solicitud(), oferta(), { carga: new Map([['o1', 5]]) })!;
+  it('penalizes an overloaded volunteer', () => {
+    const available = scoreMatch(request(), offer())!;
+    const overloaded = scoreMatch(request(), offer(), { load: new Map([['o1', 5]]) })!;
 
-    assert.ok(saturado.score < libre.score);
-    assert.ok(saturado.advertencias.some((a) => a.includes('saturado')));
+    assert.ok(overloaded.score < available.score);
+    assert.ok(overloaded.warnings.some((a) => a.includes('saturado')));
   });
 
-  it('penaliza registros viejos que probablemente ya no aplican', () => {
-    const viejo = puntuar(
-      solicitud(),
-      oferta({ creadoEn: new Date(Date.now() - 40 * 86_400_000) }),
+  it('penalizes stale offers', () => {
+    const stale = scoreMatch(
+      request(),
+      offer({ createdAt: new Date(Date.now() - 40 * 86_400_000) }),
     )!;
-    assert.ok(viejo.advertencias.some((a) => a.includes('sigue disponible')));
+    assert.ok(stale.warnings.some((a) => a.includes('sigue disponible')));
   });
 
-  it('nunca se sale del rango 0-100', () => {
-    const r = puntuar(solicitud(), oferta({ estado: 'nueva' }), { carga: new Map([['o1', 20]]) })!;
+  it('never leaves the 0-100 range', () => {
+    const r = scoreMatch(request(), offer({ status: 'new' }), { load: new Map([['o1', 20]]) })!;
     assert.ok(r.score >= 0 && r.score <= 100);
   });
 });
 
-describe('sugerenciasParaSolicitud', () => {
-  it('ordena de mejor a peor y esconde los cruces débiles', () => {
-    const s = solicitud({ tipos: ['herramientas', 'trabajo_fisico'] });
+describe('suggestionsForRequest', () => {
+  it('orders suggestions from best to worst and hides weak matches', () => {
+    const helpRequest = request({ types: ['tools', 'manual_labor'] });
 
-    const candidatos = [
-      oferta({ id: 'flojo', tipos: ['herramientas'], municipio: 'Calarcá', estado: 'nueva', radioKm: 5 }),
-      oferta({ id: 'ideal', tipos: ['herramientas', 'trabajo_fisico'] }),
-      oferta({ id: 'medio', tipos: ['herramientas'], disponibilidad: ['esta_semana'] }),
-      oferta({ id: 'ajeno', tipos: ['alimentos'] }),
+    const candidates = [
+      offer({ id: 'flojo', types: ['tools'], municipality: 'Calarcá', status: 'new', radiusKm: 5 }),
+      offer({ id: 'ideal', types: ['tools', 'manual_labor'] }),
+      offer({ id: 'medio', types: ['tools'], availability: ['this_week'] }),
+      offer({ id: 'ajeno', types: ['food'] }),
     ];
 
-    const resultado = sugerenciasParaSolicitud(s, candidatos);
-    const ids = resultado.map((r) => r.oferta.id);
+    const result = suggestionsForRequest(helpRequest, candidates);
+    const ids = result.map((r) => r.offer.id);
 
-    assert.equal(ids[0], 'ideal', 'el que cubre todo debe ir primero');
-    assert.ok(!ids.includes('ajeno'), 'quien no comparte recursos no debe aparecer');
+    assert.equal(ids[0], 'ideal', 'the offer with full coverage must come first');
+    assert.ok(!ids.includes('ajeno'), 'an offer with no shared resources must not appear');
 
-    for (let i = 1; i < resultado.length; i++) {
-      assert.ok(resultado[i - 1].score >= resultado[i].score, 'debe venir ordenado de mayor a menor');
+    for (let i = 1; i < result.length; i++) {
+      assert.ok(result[i - 1].score >= result[i].score, 'suggestions must be ordered descending');
     }
   });
 
-  it('respeta el límite pedido', () => {
-    const candidatos = Array.from({ length: 30 }, (_, i) => oferta({ id: `o${i}` }));
-    assert.equal(sugerenciasParaSolicitud(solicitud(), candidatos, {}, 5).length, 5);
+  it('respects the requested limit', () => {
+    const candidates = Array.from({ length: 30 }, (_, i) => offer({ id: `o${i}` }));
+    assert.equal(suggestionsForRequest(request(), candidates, {}, 5).length, 5);
   });
 
-  it('devuelve lista vacía cuando no hay nadie que encaje', () => {
-    assert.deepEqual(sugerenciasParaSolicitud(solicitud(), []), []);
+  it('returns an empty list when no candidate matches', () => {
+    assert.deepEqual(suggestionsForRequest(request(), []), []);
   });
 });

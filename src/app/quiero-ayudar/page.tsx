@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
-import { CascaronFormulario } from '@/components/formulario/Cascaron';
+import { FormShell } from '@/components/form/Shell';
 
-import { FormularioOferta } from './Formulario';
+import { OfferForm } from './OfferForm';
 
 export const metadata: Metadata = {
   title: 'Quiero ayudar',
@@ -10,14 +10,14 @@ export const metadata: Metadata = {
     'Pon a disposición lo que sabes hacer, tienes o puedes ofrecer: tiempo, profesión, vehículo, herramientas o espacio. No necesitas dinero para hacer la diferencia.',
 };
 
-export default function QuieroAyudar() {
+export default function OfferHelpPage() {
   return (
-    <CascaronFormulario
-      titulo="Quiero ayudar"
-      bajada="Pon a disposición lo que sabes hacer, tienes o puedes ofrecer. Te escribimos solo cuando haya un caso verificado que encaje contigo."
-      acento="verde"
+    <FormShell
+      title="Quiero ayudar"
+      subtitle="Pon a disposición lo que sabes hacer, tienes o puedes ofrecer. Te escribimos solo cuando haya un caso verificado que encaje contigo."
+      accent="green"
     >
-      <FormularioOferta />
-    </CascaronFormulario>
+      <OfferForm />
+    </FormShell>
   );
 }

@@ -1,80 +1,80 @@
-import { RECURSOS, type TipoRecurso } from './catalogos';
-import { formatearTelefono } from './validaciones';
-import type { Oferta, Solicitud } from '@/db/schema';
+import { RESOURCES, type ResourceType } from './catalogs';
+import { formatPhone } from './validations';
+import type { Offer, HelpRequest } from '@/db/schema';
 
 /**
- * Plantillas de WhatsApp para la operación manual (v1).
+ * WhatsApp templates for manual operations (v1).
  *
- * Todavía no hay bot: el operador abre el chat desde el panel con el mensaje ya
- * escrito y solo presiona enviar. Cuando Meta apruebe la Cloud API, estos mismos
- * textos se convierten en las plantillas del bot sin reescribir el flujo.
+ * There is no bot yet: the operator opens a panel chat with the message already
+ * written. Once Meta approves the Cloud API, these messages become bot templates
+ * without changing the workflow.
  */
 
-export function folioSolicitud(numero: number): string {
-  return `S-${String(numero).padStart(4, '0')}`;
+export function requestCode(number: number): string {
+  return `S-${String(number).padStart(4, '0')}`;
 }
 
-export function folioOferta(numero: number): string {
-  return `A-${String(numero).padStart(4, '0')}`;
+export function offerCode(number: number): string {
+  return `A-${String(number).padStart(4, '0')}`;
 }
 
-/** Arma el enlace wa.me. El teléfono va sin "+" ni espacios. */
-export function enlaceWhatsapp(telefonoE164: string, mensaje: string): string {
-  const numero = telefonoE164.replace(/\D/g, '');
-  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+/** Builds a wa.me link from a phone number without plus signs or spaces. */
+export function whatsappLink(phoneE164: string, message: string): string {
+  const number = phoneE164.replace(/\D/g, '');
+  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
-function listaRecursos(tipos: readonly TipoRecurso[]): string {
-  return tipos.map((t) => RECURSOS[t].panel.toLowerCase()).join(', ');
+function resourceList(types: readonly ResourceType[]): string {
+  return types.map((t) => RESOURCES[t].internal.toLowerCase()).join(', ');
 }
 
-function primerNombre(nombre: string): string {
-  return nombre.trim().split(/\s+/)[0] ?? nombre;
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? name;
 }
 
-/** Nivel 0 → 1: primer contacto para verificar que la solicitud es real. */
-export function mensajeVerificacion(s: Solicitud): string {
+/** Level 0 → 1: first contact to verify that the request is real. */
+export function verificationMessage(s: HelpRequest): string {
   return [
-    `Hola ${primerNombre(s.nombre)}, te escribimos de *Conexiones*.`,
+    `Hola ${firstName(s.name)}, te escribimos de *Conexiones*.`,
     ``,
-    `Recibimos tu solicitud ${folioSolicitud(s.numero)} sobre: ${listaRecursos(s.tipos)}.`,
+    `Recibimos tu solicitud ${requestCode(s.number)} sobre: ${resourceList(s.types)}.`,
     ``,
     `Para poder conectarte con alguien que pueda ayudarte necesitamos confirmar tres cosas:`,
     `1. ¿Sigues necesitando esta ayuda?`,
-    `2. ¿La dirección en ${s.municipio}${s.zona ? `, ${s.zona}` : ''} es correcta?`,
+    `2. ¿La dirección en ${s.municipality}${s.zone ? `, ${s.zone}` : ''} es correcta?`,
     `3. ¿Hay alguna otra cosa urgente que no nos contaste?`,
     ``,
     `Conexiones es una iniciativa ciudadana gratuita. Nunca te vamos a pedir dinero ni datos bancarios.`,
   ].join('\n');
 }
 
-/** Nivel 2 → 3: le presentamos la necesidad al voluntario. */
-export function mensajePropuestaVoluntario(o: Oferta, s: Solicitud): string {
+/** Level 2 → 3: present the request to the volunteer. */
+export function volunteerProposalMessage(o: Offer, s: HelpRequest): string {
   return [
-    `Hola ${primerNombre(o.nombre)}, te escribimos de *Conexiones*.`,
+    `Hola ${firstName(o.name)}, te escribimos de *Conexiones*.`,
     ``,
-    `Te registraste diciendo que puedes aportar: ${listaRecursos(o.tipos)}.`,
+    `Te registraste diciendo que puedes aportar: ${resourceList(o.types)}.`,
     ``,
     `Tenemos una necesidad *ya verificada* que encaja con lo tuyo:`,
-    `• Qué necesitan: ${listaRecursos(s.tipos)}`,
-    `• Dónde: ${s.municipio}${s.zona ? `, ${s.zona}` : ''}`,
-    `• Cuántas personas: ${s.personasAfectadas}`,
-    `• Situación: ${s.descripcion}`,
+    `• Qué necesitan: ${resourceList(s.types)}`,
+    `• Dónde: ${s.municipality}${s.zone ? `, ${s.zone}` : ''}`,
+    `• Cuántas personas: ${s.affectedPeople}`,
+    `• Situación: ${s.description}`,
     ``,
     `¿Puedes ayudar con esto? Respóndenos *SÍ* o *NO* y te pasamos el contacto directo.`,
   ].join('\n');
 }
 
-/** Nivel 3: el voluntario aceptó, le pasamos el contacto a cada lado. */
-export function mensajePresentacionASolicitante(s: Solicitud, o: Oferta): string {
+/** Level 3: the volunteer accepted, so share contact details with both sides. */
+export function introductionMessageForRequester(s: HelpRequest, o: Offer): string {
   return [
-    `¡Buenas noticias, ${primerNombre(s.nombre)}!`,
+    `¡Buenas noticias, ${firstName(s.name)}!`,
     ``,
-    `Encontramos a alguien que puede ayudarte con tu solicitud ${folioSolicitud(s.numero)}:`,
+    `Encontramos a alguien que puede ayudarte con tu solicitud ${requestCode(s.number)}:`,
     ``,
-    `• Nombre: ${o.nombre}${o.organizacion ? ` (${o.organizacion})` : ''}`,
-    `• Teléfono: ${formatearTelefono(o.telefono)}`,
-    `• Puede aportar: ${o.descripcion}`,
+    `• Nombre: ${o.name}${o.organization ? ` (${o.organization})` : ''}`,
+    `• Teléfono: ${formatPhone(o.phone)}`,
+    `• Puede aportar: ${o.description}`,
     ``,
     `Ya le pasamos tus datos también para que se coordinen.`,
     ``,
@@ -82,51 +82,51 @@ export function mensajePresentacionASolicitante(s: Solicitud, o: Oferta): string
   ].join('\n');
 }
 
-export function mensajePresentacionAVoluntario(o: Oferta, s: Solicitud): string {
+export function introductionMessageForVolunteer(o: Offer, s: HelpRequest): string {
   return [
-    `¡Gracias por aceptar, ${primerNombre(o.nombre)}!`,
+    `¡Gracias por aceptar, ${firstName(o.name)}!`,
     ``,
     `Este es el contacto de la persona que necesita tu ayuda:`,
     ``,
-    `• Nombre: ${s.nombre}`,
-    `• Teléfono: ${formatearTelefono(s.telefono)}`,
-    `• Dónde: ${s.municipio}${s.zona ? `, ${s.zona}` : ''}${s.referenciaDireccion ? ` — ${s.referenciaDireccion}` : ''}`,
-    `• Qué necesita: ${s.descripcion}`,
+    `• Nombre: ${s.name}`,
+    `• Teléfono: ${formatPhone(s.phone)}`,
+    `• Dónde: ${s.municipality}${s.zone ? `, ${s.zone}` : ''}${s.addressReference ? ` — ${s.addressReference}` : ''}`,
+    `• Qué necesita: ${s.description}`,
     ``,
-    `Cuando terminen, escríbenos para cerrar el caso ${folioSolicitud(s.numero)}.`,
+    `Cuando terminen, escríbenos para cerrar el caso ${requestCode(s.number)}.`,
   ].join('\n');
 }
 
-/** Nivel 3 → 4: confirmación de que la ayuda sí llegó. */
-export function mensajeCierre(s: Solicitud): string {
+/** Level 3 → 4: confirmation that the help was delivered. */
+export function closingMessage(s: HelpRequest): string {
   return [
-    `Hola ${primerNombre(s.nombre)}, somos *Conexiones*.`,
+    `Hola ${firstName(s.name)}, somos *Conexiones*.`,
     ``,
-    `Queremos confirmar el caso ${folioSolicitud(s.numero)}:`,
+    `Queremos confirmar el caso ${requestCode(s.number)}:`,
     `¿Recibiste la ayuda que necesitabas?`,
     ``,
     `Respóndenos *SÍ* o *NO*. Si algo no salió bien, cuéntanos qué pasó y lo retomamos.`,
   ].join('\n');
 }
 
-/** Confirmación automática que ve la persona apenas envía el formulario. */
-export function mensajeBienvenidaSolicitud(numero: number): string {
+/** Automatic confirmation shown immediately after a form submission. */
+export function requestWelcomeMessage(number: number): string {
   return [
-    `Hola, acabo de registrar la solicitud ${folioSolicitud(numero)} en Conexiones.`,
+    `Hola, acabo de registrar la solicitud ${requestCode(number)} en Conexiones.`,
     `Quedo pendiente de la verificación.`,
   ].join('\n');
 }
 
-export function mensajeBienvenidaOferta(numero: number): string {
+export function offerWelcomeMessage(number: number): string {
   return [
-    `Hola, acabo de registrarme como voluntario en Conexiones con el código ${folioOferta(numero)}.`,
+    `Hola, acabo de registrarme como voluntario en Conexiones con el código ${offerCode(number)}.`,
     `Quedo atento por si me necesitan.`,
   ].join('\n');
 }
 
-/** Número del equipo, para que el ciudadano nos escriba a nosotros. */
-export function enlaceEquipo(mensaje: string): string | null {
-  const numero = process.env.NEXT_PUBLIC_WHATSAPP_EQUIPO;
-  if (!numero) return null;
-  return enlaceWhatsapp(numero, mensaje);
+/** Team number used when a citizen needs to contact us. */
+export function teamLink(message: string): string | null {
+  const number = process.env.NEXT_PUBLIC_WHATSAPP_TEAM;
+  if (!number) return null;
+  return whatsappLink(number, message);
 }

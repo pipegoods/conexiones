@@ -6,21 +6,19 @@ import * as schema from './schema';
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
-  // A propósito no lanzamos aquí: `next build` importa este módulo y el sitio
-  // debe poder compilarse sin base de datos. Quien consulta se encarga de fallar
-  // con gracia (ver `obtenerCifras`).
+  // Do not throw here: `next build` imports this module and the site must build
+  // without a database. Query callers handle failures gracefully.
   console.warn('[db] Falta DATABASE_URL. Copia .env.example a .env.local y pega la cadena de Neon.');
 }
 
 /**
- * Usamos el driver por WebSocket (neon-serverless) y no el HTTP, porque el panel
- * necesita transacciones: cambiar el estado de una solicitud y escribir su evento
- * en la bitácora tienen que pasar juntos o no pasar.
+ * Use the WebSocket neon-serverless driver rather than HTTP because the panel
+ * needs transactions: a request status change and its log event must commit together.
  */
 const pool = new Pool({ connectionString: connectionString ?? 'postgres://sin-configurar' });
 
 export const db = drizzle({ client: pool, schema });
 
-export const hayBaseDeDatos = Boolean(connectionString);
+export const hasDatabase = Boolean(connectionString);
 
 export * from './schema';

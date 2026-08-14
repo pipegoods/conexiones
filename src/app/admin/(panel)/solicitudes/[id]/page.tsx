@@ -1,29 +1,31 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { cambiarEstadoSolicitud } from '@/app/admin/acciones';
-import { ConexionesSolicitud } from '@/components/admin/ConexionesSolicitud';
-import { ContactoSolicitud } from '@/components/admin/ContactoSolicitud';
-import { DatosSolicitud } from '@/components/admin/DatosSolicitud';
-import { HistoriaBitacora } from '@/components/admin/HistoriaBitacora';
-import { NotasInternas } from '@/components/admin/NotasInternas';
-import { Fecha, Tarjeta, Vacio } from '@/components/admin/Piezas';
-import { SugerenciasVoluntario } from '@/components/admin/SugerenciasVoluntario';
-import { ESTADO_SOLICITUD_META, TRANSICIONES_SOLICITUD } from '@/lib/catalogos';
-import { obtenerSolicitud, sugerenciasPara } from '@/lib/consultas';
+import { updateRequestStatus } from '@/app/admin/actions';
+import { ActivityLog } from '@/components/admin/ActivityLog';
+import { InternalNotes } from '@/components/admin/InternalNotes';
+import { Card, DateDisplay, EmptyState } from '@/components/admin/Primitives';
+import { RequestConnections } from '@/components/admin/RequestConnections';
+import { RequestContact } from '@/components/admin/RequestContact';
+import { RequestDetails } from '@/components/admin/RequestDetails';
+import { VolunteerSuggestions } from '@/components/admin/VolunteerSuggestions';
+import { REQUEST_STATUS_META, REQUEST_TRANSITIONS } from '@/lib/catalogs';
+import { getRequest, getSuggestionsForRequest } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
-export default async function DetalleSolicitud({ params }: { params: Promise<{ id: string }> }) {
+export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const datos = await obtenerSolicitud(id);
-  if (!datos) notFound();
+  const data = await getRequest(id);
+  if (!data) notFound();
 
-  const { solicitud: s, conexiones: vinculos, bitacora } = datos;
-  const transiciones = TRANSICIONES_SOLICITUD[s.estado];
+  const { request, links, log } = data;
+  const transitions = REQUEST_TRANSITIONS[request.status];
 
-  // Solo tiene sentido buscar candidatos cuando ya verificamos que el caso es real.
-  const sugerencias = ['verificada', 'conectada'].includes(s.estado) ? await sugerenciasPara(s) : [];
+  // Suggestions only make sense after verifying that the request is real.
+  const suggestions = ['verified', 'connected'].includes(request.status)
+    ? await getSuggestionsForRequest(request)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -31,32 +33,32 @@ export default async function DetalleSolicitud({ params }: { params: Promise<{ i
         ← Volver a solicitudes
       </Link>
 
-      <DatosSolicitud solicitud={s} />
+      <RequestDetails request={request} />
 
-      <HistoriaBitacora bitacora={bitacora} />
+      <ActivityLog log={log} />
 
-      <ContactoSolicitud solicitud={s} />
+      <RequestContact request={request} />
 
-      {/* -------------------------------------------------- Sugerencias -- */}
-      {['verificada', 'conectada'].includes(s.estado) && (
-        <SugerenciasVoluntario solicitud={s} sugerencias={sugerencias} />
+      {/* ------------------------------------------------- Suggestions -- */}
+      {['verified', 'connected'].includes(request.status) && (
+        <VolunteerSuggestions request={request} suggestions={suggestions} />
       )}
 
-      {/* -------------------------------------------------- Conexiones -- */}
-      <ConexionesSolicitud solicitud={s} vinculos={vinculos} />
+      {/* ------------------------------------------------- Connections -- */}
+      <RequestConnections request={request} links={links} />
 
-      {/* ------------------------------------------------------ Columna -- */}
+      {/* ------------------------------------------------------ Column -- */}
       <div className="space-y-6">
-        <Tarjeta titulo="Mover de nivel">
-          {transiciones.length === 0 ? (
-            <Vacio>Este caso está cerrado.</Vacio>
+        <Card title="Mover de nivel">
+          {transitions.length === 0 ? (
+            <EmptyState>Este caso está cerrado.</EmptyState>
           ) : (
-            <form action={cambiarEstadoSolicitud} className="space-y-3">
-              <input type="hidden" name="id" value={s.id} />
+            <form action={updateRequestStatus} className="space-y-3">
+              <input type="hidden" name="id" value={request.id} />
               <label className="block text-sm font-semibold text-neutral-600">
                 Nota (queda en la bitácora)
                 <textarea
-                  name="nota"
+                  name="note"
                   rows={2}
                   placeholder="Ejemplo: hablé con ella, confirmó la dirección y que son 4 personas."
                   className="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
@@ -64,16 +66,16 @@ export default async function DetalleSolicitud({ params }: { params: Promise<{ i
               </label>
 
               <div className="flex flex-col gap-2">
-                {transiciones.map((t) => {
-                  const m = ESTADO_SOLICITUD_META[t];
+                {transitions.map((t) => {
+                  const m = REQUEST_STATUS_META[t];
                   return (
                     <button
                       key={t}
                       type="submit"
-                      name="estado"
+                      name="status"
                       value={t}
                       className={`rounded-xl px-4 py-3 text-left text-sm font-bold transition hover:brightness-95 ${
-                        t === 'descartada'
+                        t === 'discarded'
                           ? 'bg-neutral-100 text-neutral-700'
                           : 'bg-linear-to-r from-marca-rosa to-marca-morado text-white'
                       }`}
@@ -85,30 +87,30 @@ export default async function DetalleSolicitud({ params }: { params: Promise<{ i
               </div>
             </form>
           )}
-        </Tarjeta>
+        </Card>
 
-        <Tarjeta titulo="Línea de tiempo">
+        <Card title="Línea de tiempo">
           <ol className="space-y-3 text-sm">
-            <Hito etiqueta="Recibida" valor={s.creadoEn} />
-            <Hito etiqueta="Contactada" valor={s.contactadoEn} />
-            <Hito etiqueta="Verificada" valor={s.verificadoEn} />
-            <Hito etiqueta="Conectada" valor={s.conectadoEn} />
-            <Hito etiqueta="Resuelta" valor={s.resueltoEn} />
+            <Milestone label="Recibida" value={request.createdAt} />
+            <Milestone label="Contactada" value={request.contactedAt} />
+            <Milestone label="Verificada" value={request.verifiedAt} />
+            <Milestone label="Conectada" value={request.connectedAt} />
+            <Milestone label="Resuelta" value={request.resolvedAt} />
           </ol>
-        </Tarjeta>
+        </Card>
 
-        <NotasInternas id={s.id} notasInternas={s.notasInternas ?? ''} />
+        <InternalNotes id={request.id} internalNotes={request.internalNotes ?? ''} />
       </div>
     </div>
   );
 }
 
-function Hito({ etiqueta, valor }: { etiqueta: string; valor: Date | null }) {
+function Milestone({ label, value }: { label: string; value: Date | null }) {
   return (
     <li className="flex items-center justify-between gap-3">
-      <span className={valor ? 'font-semibold text-tinta' : 'text-neutral-400'}>{etiqueta}</span>
+      <span className={value ? 'font-semibold text-tinta' : 'text-neutral-400'}>{label}</span>
       <span className="text-neutral-500">
-        <Fecha valor={valor} />
+        <DateDisplay value={value} />
       </span>
     </li>
   );

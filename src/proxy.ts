@@ -1,30 +1,29 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { COOKIE_SESION, verificarSesion } from '@/lib/sesion';
+import { SESSION_COOKIE, verifySession } from '@/lib/session';
 
 /**
- * En Next.js 16 el antiguo `middleware.ts` se llama `proxy.ts`.
+ * In Next.js 16, the former `middleware.ts` is named `proxy.ts`.
  *
- * Esto es solo la primera barrera: bloquea la navegación al panel. La
- * verificación que de verdad importa vive en `requerirSesion()`, porque el proxy
- * no corre en server actions.
+ * This is only the first barrier: it blocks panel navigation. The essential
+ * verification lives in `requireSession()` because proxies do not run in server actions.
  */
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (!pathname.startsWith('/admin')) return NextResponse.next();
 
-  const sesion = await verificarSesion(req.cookies.get(COOKIE_SESION)?.value);
-  const esLogin = pathname === '/admin/login';
+  const session = await verifySession(req.cookies.get(SESSION_COOKIE)?.value);
+  const isLoginPage = pathname === '/admin/login';
 
-  if (!sesion && !esLogin) {
+  if (!session && !isLoginPage) {
     const url = req.nextUrl.clone();
     url.pathname = '/admin/login';
-    url.searchParams.set('siguiente', pathname);
+    url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
   }
 
-  if (sesion && esLogin) {
+  if (session && isLoginPage) {
     const url = req.nextUrl.clone();
     url.pathname = '/admin';
     url.search = '';

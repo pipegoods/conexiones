@@ -1,11 +1,11 @@
 {
-  "id": "65a7b036-ad94-44b4-9c5c-41790a96903e",
+  "id": "7b762c55-e54a-4c26-80e5-b8ead45c2fb8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.conexiones": {
-      "name": "conexiones",
+    "public.connections": {
+      "name": "connections",
       "schema": "",
       "columns": {
         "id": {
@@ -15,25 +15,25 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "solicitud_id": {
-          "name": "solicitud_id",
+        "request_id": {
+          "name": "request_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "oferta_id": {
-          "name": "oferta_id",
+        "offer_id": {
+          "name": "offer_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "estado": {
-          "name": "estado",
-          "type": "estado_conexion",
+        "status": {
+          "name": "status",
+          "type": "connection_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'propuesta'"
+          "default": "'proposed'"
         },
         "score": {
           "name": "score",
@@ -42,50 +42,50 @@
           "notNull": true,
           "default": 0
         },
-        "razones": {
-          "name": "razones",
+        "reasons": {
+          "name": "reasons",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "nota": {
-          "name": "nota",
+        "note": {
+          "name": "note",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "creado_por": {
-          "name": "creado_por",
+        "created_by": {
+          "name": "created_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
-        "creado_en": {
-          "name": "creado_en",
+        "created_at": {
+          "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
-        "confirmado_en": {
-          "name": "confirmado_en",
+        "confirmed_at": {
+          "name": "confirmed_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }
       },
       "indexes": {
-        "conexiones_par_idx": {
-          "name": "conexiones_par_idx",
+        "connections_pair_idx": {
+          "name": "connections_pair_idx",
           "columns": [
             {
-              "expression": "solicitud_id",
+              "expression": "request_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             },
             {
-              "expression": "oferta_id",
+              "expression": "offer_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -96,11 +96,11 @@
           "method": "btree",
           "with": {}
         },
-        "conexiones_solicitud_idx": {
-          "name": "conexiones_solicitud_idx",
+        "connections_request_idx": {
+          "name": "connections_request_idx",
           "columns": [
             {
-              "expression": "solicitud_id",
+              "expression": "request_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -111,11 +111,11 @@
           "method": "btree",
           "with": {}
         },
-        "conexiones_oferta_idx": {
-          "name": "conexiones_oferta_idx",
+        "connections_offer_idx": {
+          "name": "connections_offer_idx",
           "columns": [
             {
-              "expression": "oferta_id",
+              "expression": "offer_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -128,12 +128,12 @@
         }
       },
       "foreignKeys": {
-        "conexiones_solicitud_id_solicitudes_id_fk": {
-          "name": "conexiones_solicitud_id_solicitudes_id_fk",
-          "tableFrom": "conexiones",
-          "tableTo": "solicitudes",
+        "connections_request_id_requests_id_fk": {
+          "name": "connections_request_id_requests_id_fk",
+          "tableFrom": "connections",
+          "tableTo": "requests",
           "columnsFrom": [
-            "solicitud_id"
+            "request_id"
           ],
           "columnsTo": [
             "id"
@@ -141,12 +141,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "conexiones_oferta_id_ofertas_id_fk": {
-          "name": "conexiones_oferta_id_ofertas_id_fk",
-          "tableFrom": "conexiones",
-          "tableTo": "ofertas",
+        "connections_offer_id_offers_id_fk": {
+          "name": "connections_offer_id_offers_id_fk",
+          "tableFrom": "connections",
+          "tableTo": "offers",
           "columnsFrom": [
-            "oferta_id"
+            "offer_id"
           ],
           "columnsTo": [
             "id"
@@ -154,12 +154,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "conexiones_creado_por_usuarios_id_fk": {
-          "name": "conexiones_creado_por_usuarios_id_fk",
-          "tableFrom": "conexiones",
-          "tableTo": "usuarios",
+        "connections_created_by_users_id_fk": {
+          "name": "connections_created_by_users_id_fk",
+          "tableFrom": "connections",
+          "tableTo": "users",
           "columnsFrom": [
-            "creado_por"
+            "created_by"
           ],
           "columnsTo": [
             "id"
@@ -174,8 +174,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.eventos": {
-      "name": "eventos",
+    "public.events": {
+      "name": "events",
       "schema": "",
       "columns": {
         "id": {
@@ -185,38 +185,38 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "entidad": {
-          "name": "entidad",
+        "entity_type": {
+          "name": "entity_type",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "entidad_id": {
-          "name": "entidad_id",
+        "entity_id": {
+          "name": "entity_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "estado_anterior": {
-          "name": "estado_anterior",
+        "previous_status": {
+          "name": "previous_status",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "estado_nuevo": {
-          "name": "estado_nuevo",
+        "new_status": {
+          "name": "new_status",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "accion": {
-          "name": "accion",
+        "action": {
+          "name": "action",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "nota": {
-          "name": "nota",
+        "note": {
+          "name": "note",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -227,14 +227,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "actor_nombre": {
-          "name": "actor_nombre",
+        "actor_name": {
+          "name": "actor_name",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "creado_en": {
-          "name": "creado_en",
+        "created_at": {
+          "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -242,17 +242,17 @@
         }
       },
       "indexes": {
-        "eventos_entidad_idx": {
-          "name": "eventos_entidad_idx",
+        "events_entity_idx": {
+          "name": "events_entity_idx",
           "columns": [
             {
-              "expression": "entidad",
+              "expression": "entity_type",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             },
             {
-              "expression": "entidad_id",
+              "expression": "entity_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -263,11 +263,11 @@
           "method": "btree",
           "with": {}
         },
-        "eventos_creado_idx": {
-          "name": "eventos_creado_idx",
+        "events_created_idx": {
+          "name": "events_created_idx",
           "columns": [
             {
-              "expression": "creado_en",
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -280,10 +280,10 @@
         }
       },
       "foreignKeys": {
-        "eventos_actor_id_usuarios_id_fk": {
-          "name": "eventos_actor_id_usuarios_id_fk",
-          "tableFrom": "eventos",
-          "tableTo": "usuarios",
+        "events_actor_id_users_id_fk": {
+          "name": "events_actor_id_users_id_fk",
+          "tableFrom": "events",
+          "tableTo": "users",
           "columnsFrom": [
             "actor_id"
           ],
@@ -300,8 +300,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.ofertas": {
-      "name": "ofertas",
+    "public.offers": {
+      "name": "offers",
       "schema": "",
       "columns": {
         "id": {
@@ -311,20 +311,20 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "numero": {
-          "name": "numero",
+        "number": {
+          "name": "number",
           "type": "serial",
           "primaryKey": false,
           "notNull": true
         },
-        "nombre": {
-          "name": "nombre",
+        "name": {
+          "name": "name",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "telefono": {
-          "name": "telefono",
+        "phone": {
+          "name": "phone",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -335,45 +335,45 @@
           "primaryKey": false,
           "notNull": false
         },
-        "organizacion": {
-          "name": "organizacion",
+        "organization": {
+          "name": "organization",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "tipos": {
-          "name": "tipos",
-          "type": "tipo_recurso[]",
+        "types": {
+          "name": "types",
+          "type": "resource_type[]",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
-        "descripcion": {
-          "name": "descripcion",
+        "description": {
+          "name": "description",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "departamento": {
-          "name": "departamento",
+        "department": {
+          "name": "department",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "municipio": {
-          "name": "municipio",
+        "municipality": {
+          "name": "municipality",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "zona": {
-          "name": "zona",
+        "zone": {
+          "name": "zone",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "radio_km": {
-          "name": "radio_km",
+        "radius_km": {
+          "name": "radius_km",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -391,73 +391,73 @@
           "primaryKey": false,
           "notNull": false
         },
-        "disponibilidad": {
-          "name": "disponibilidad",
-          "type": "disponibilidad[]",
+        "availability": {
+          "name": "availability",
+          "type": "availability[]",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
-        "nota_disponibilidad": {
-          "name": "nota_disponibilidad",
+        "availability_note": {
+          "name": "availability_note",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "estado": {
-          "name": "estado",
-          "type": "estado_oferta",
+        "status": {
+          "name": "status",
+          "type": "offer_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'nueva'"
+          "default": "'new'"
         },
-        "notas_internas": {
-          "name": "notas_internas",
+        "internal_notes": {
+          "name": "internal_notes",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "acepta_datos": {
-          "name": "acepta_datos",
+        "accepts_data_use": {
+          "name": "accepts_data_use",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true
         },
-        "acepta_whatsapp": {
-          "name": "acepta_whatsapp",
+        "accepts_whatsapp": {
+          "name": "accepts_whatsapp",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": true
         },
-        "creado_en": {
-          "name": "creado_en",
+        "created_at": {
+          "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
-        "actualizado_en": {
-          "name": "actualizado_en",
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
-        "verificado_en": {
-          "name": "verificado_en",
+        "verified_at": {
+          "name": "verified_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }
       },
       "indexes": {
-        "ofertas_estado_idx": {
-          "name": "ofertas_estado_idx",
+        "offers_status_idx": {
+          "name": "offers_status_idx",
           "columns": [
             {
-              "expression": "estado",
+              "expression": "status",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -468,11 +468,11 @@
           "method": "btree",
           "with": {}
         },
-        "ofertas_municipio_idx": {
-          "name": "ofertas_municipio_idx",
+        "offers_municipality_idx": {
+          "name": "offers_municipality_idx",
           "columns": [
             {
-              "expression": "municipio",
+              "expression": "municipality",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -483,11 +483,11 @@
           "method": "btree",
           "with": {}
         },
-        "ofertas_creado_idx": {
-          "name": "ofertas_creado_idx",
+        "offers_created_idx": {
+          "name": "offers_created_idx",
           "columns": [
             {
-              "expression": "creado_en",
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -498,11 +498,11 @@
           "method": "btree",
           "with": {}
         },
-        "ofertas_telefono_idx": {
-          "name": "ofertas_telefono_idx",
+        "offers_phone_idx": {
+          "name": "offers_phone_idx",
           "columns": [
             {
-              "expression": "telefono",
+              "expression": "phone",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -521,8 +521,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.solicitudes": {
-      "name": "solicitudes",
+    "public.requests": {
+      "name": "requests",
       "schema": "",
       "columns": {
         "id": {
@@ -532,92 +532,92 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "numero": {
-          "name": "numero",
+        "number": {
+          "name": "number",
           "type": "serial",
           "primaryKey": false,
           "notNull": true
         },
-        "nombre": {
-          "name": "nombre",
+        "name": {
+          "name": "name",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "telefono": {
-          "name": "telefono",
+        "phone": {
+          "name": "phone",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "es_para_otra_persona": {
-          "name": "es_para_otra_persona",
+        "is_for_someone_else": {
+          "name": "is_for_someone_else",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": false
         },
-        "personas_afectadas": {
-          "name": "personas_afectadas",
+        "affected_people": {
+          "name": "affected_people",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 1
         },
-        "tiene_menores": {
-          "name": "tiene_menores",
+        "has_minors": {
+          "name": "has_minors",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": false
         },
-        "tiene_adultos_mayores": {
-          "name": "tiene_adultos_mayores",
+        "has_elderly": {
+          "name": "has_elderly",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": false
         },
-        "tipos": {
-          "name": "tipos",
-          "type": "tipo_recurso[]",
+        "types": {
+          "name": "types",
+          "type": "resource_type[]",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
-        "descripcion": {
-          "name": "descripcion",
+        "description": {
+          "name": "description",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "urgencia": {
-          "name": "urgencia",
-          "type": "urgencia",
+        "urgency": {
+          "name": "urgency",
+          "type": "urgency",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
-        "departamento": {
-          "name": "departamento",
+        "department": {
+          "name": "department",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "municipio": {
-          "name": "municipio",
+        "municipality": {
+          "name": "municipality",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "zona": {
-          "name": "zona",
+        "zone": {
+          "name": "zone",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "referencia_direccion": {
-          "name": "referencia_direccion",
+        "address_reference": {
+          "name": "address_reference",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -634,84 +634,84 @@
           "primaryKey": false,
           "notNull": false
         },
-        "estado": {
-          "name": "estado",
-          "type": "estado_solicitud",
+        "status": {
+          "name": "status",
+          "type": "request_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'recibida'"
+          "default": "'received'"
         },
-        "notas_internas": {
-          "name": "notas_internas",
+        "internal_notes": {
+          "name": "internal_notes",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "motivo_descarte": {
-          "name": "motivo_descarte",
+        "discard_reason": {
+          "name": "discard_reason",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "acepta_datos": {
-          "name": "acepta_datos",
+        "accepts_data_use": {
+          "name": "accepts_data_use",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true
         },
-        "acepta_whatsapp": {
-          "name": "acepta_whatsapp",
+        "accepts_whatsapp": {
+          "name": "accepts_whatsapp",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": true
         },
-        "creado_en": {
-          "name": "creado_en",
+        "created_at": {
+          "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
-        "actualizado_en": {
-          "name": "actualizado_en",
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
-        "contactado_en": {
-          "name": "contactado_en",
+        "contacted_at": {
+          "name": "contacted_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
-        "verificado_en": {
-          "name": "verificado_en",
+        "verified_at": {
+          "name": "verified_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
-        "conectado_en": {
-          "name": "conectado_en",
+        "connected_at": {
+          "name": "connected_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
-        "resuelto_en": {
-          "name": "resuelto_en",
+        "resolved_at": {
+          "name": "resolved_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }
       },
       "indexes": {
-        "solicitudes_estado_idx": {
-          "name": "solicitudes_estado_idx",
+        "requests_status_idx": {
+          "name": "requests_status_idx",
           "columns": [
             {
-              "expression": "estado",
+              "expression": "status",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -722,11 +722,11 @@
           "method": "btree",
           "with": {}
         },
-        "solicitudes_municipio_idx": {
-          "name": "solicitudes_municipio_idx",
+        "requests_municipality_idx": {
+          "name": "requests_municipality_idx",
           "columns": [
             {
-              "expression": "municipio",
+              "expression": "municipality",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -737,11 +737,11 @@
           "method": "btree",
           "with": {}
         },
-        "solicitudes_creado_idx": {
-          "name": "solicitudes_creado_idx",
+        "requests_created_idx": {
+          "name": "requests_created_idx",
           "columns": [
             {
-              "expression": "creado_en",
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -752,11 +752,11 @@
           "method": "btree",
           "with": {}
         },
-        "solicitudes_telefono_idx": {
-          "name": "solicitudes_telefono_idx",
+        "requests_phone_idx": {
+          "name": "requests_phone_idx",
           "columns": [
             {
-              "expression": "telefono",
+              "expression": "phone",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -775,8 +775,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.usuarios": {
-      "name": "usuarios",
+    "public.users": {
+      "name": "users",
       "schema": "",
       "columns": {
         "id": {
@@ -792,8 +792,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "nombre": {
-          "name": "nombre",
+        "name": {
+          "name": "name",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -804,38 +804,38 @@
           "primaryKey": false,
           "notNull": true
         },
-        "rol": {
-          "name": "rol",
-          "type": "rol",
+        "role": {
+          "name": "role",
+          "type": "role",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'operador'"
+          "default": "'operator'"
         },
-        "activo": {
-          "name": "activo",
+        "active": {
+          "name": "active",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": true
         },
-        "creado_en": {
-          "name": "creado_en",
+        "created_at": {
+          "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
-        "ultimo_acceso_en": {
-          "name": "ultimo_acceso_en",
+        "last_login_at": {
+          "name": "last_login_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }
       },
       "indexes": {
-        "usuarios_email_idx": {
-          "name": "usuarios_email_idx",
+        "users_email_idx": {
+          "name": "users_email_idx",
           "columns": [
             {
               "expression": "lower(\"email\")",
@@ -859,90 +859,90 @@
     }
   },
   "enums": {
-    "public.disponibilidad": {
-      "name": "disponibilidad",
+    "public.availability": {
+      "name": "availability",
       "schema": "public",
       "values": [
-        "ahora",
-        "hoy",
-        "esta_semana",
-        "fines_de_semana",
+        "now",
+        "today",
+        "this_week",
+        "weekends",
         "flexible"
       ]
     },
-    "public.estado_conexion": {
-      "name": "estado_conexion",
+    "public.connection_status": {
+      "name": "connection_status",
       "schema": "public",
       "values": [
-        "propuesta",
-        "aceptada",
-        "rechazada",
-        "confirmada",
-        "cancelada"
+        "proposed",
+        "accepted",
+        "rejected",
+        "confirmed",
+        "cancelled"
       ]
     },
-    "public.estado_oferta": {
-      "name": "estado_oferta",
+    "public.offer_status": {
+      "name": "offer_status",
       "schema": "public",
       "values": [
-        "nueva",
-        "verificada",
-        "pausada",
-        "archivada"
+        "new",
+        "verified",
+        "paused",
+        "archived"
       ]
     },
-    "public.estado_solicitud": {
-      "name": "estado_solicitud",
+    "public.request_status": {
+      "name": "request_status",
       "schema": "public",
       "values": [
-        "recibida",
-        "contactada",
-        "verificada",
-        "conectada",
-        "resuelta",
-        "descartada"
+        "received",
+        "contacted",
+        "verified",
+        "connected",
+        "resolved",
+        "discarded"
       ]
     },
-    "public.rol": {
-      "name": "rol",
+    "public.resource_type": {
+      "name": "resource_type",
+      "schema": "public",
+      "values": [
+        "food",
+        "water",
+        "medicine",
+        "health",
+        "psychological_support",
+        "accommodation",
+        "clothing_supplies",
+        "transport",
+        "tools",
+        "manual_labor",
+        "profession",
+        "knowledge",
+        "information",
+        "space",
+        "contacts",
+        "time",
+        "money",
+        "other"
+      ]
+    },
+    "public.role": {
+      "name": "role",
       "schema": "public",
       "values": [
         "admin",
-        "operador"
+        "operator"
       ]
     },
-    "public.tipo_recurso": {
-      "name": "tipo_recurso",
+    "public.urgency": {
+      "name": "urgency",
       "schema": "public",
       "values": [
-        "alimentos",
-        "agua",
-        "medicamentos",
-        "salud",
-        "apoyo_psicologico",
-        "alojamiento",
-        "ropa_enseres",
-        "transporte",
-        "herramientas",
-        "trabajo_fisico",
-        "profesion",
-        "conocimientos",
-        "informacion",
-        "espacio",
-        "contactos",
-        "tiempo",
-        "dinero",
-        "otro"
-      ]
-    },
-    "public.urgencia": {
-      "name": "urgencia",
-      "schema": "public",
-      "values": [
-        "inmediata",
-        "hoy",
-        "esta_semana",
-        "sin_prisa"
+        "immediate",
+        "today",
+        "this_week",
+        "not_urgent"
       ]
     }
   },

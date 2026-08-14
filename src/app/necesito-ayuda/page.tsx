@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
-import { CascaronFormulario } from '@/components/formulario/Cascaron';
+import { FormShell } from '@/components/form/Shell';
 
-import { FormularioSolicitud } from './Formulario';
+import { RequestForm } from './RequestForm';
 
 export const metadata: Metadata = {
   title: 'Necesito ayuda',
@@ -10,14 +10,14 @@ export const metadata: Metadata = {
     'Cuéntanos qué necesitas. Verificamos tu solicitud y buscamos a alguien que pueda ayudarte. Gratuito y confidencial.',
 };
 
-export default function NecesitoAyuda() {
+export default function RequestHelpPage() {
   return (
-    <CascaronFormulario
-      titulo="Necesito ayuda"
-      bajada="Cuéntanos qué necesitas. Verificamos tu solicitud y buscamos a la persona indicada para ayudarte."
-      acento="rosa"
+    <FormShell
+      title="Necesito ayuda"
+      subtitle="Cuéntanos qué necesitas. Verificamos tu solicitud y buscamos a la persona indicada para ayudarte."
+      accent="pink"
     >
-      <FormularioSolicitud />
-    </CascaronFormulario>
+      <RequestForm />
+    </FormShell>
   );
 }

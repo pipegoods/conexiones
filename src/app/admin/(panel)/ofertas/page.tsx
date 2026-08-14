@@ -1,38 +1,39 @@
 import Link from 'next/link';
 
-import { ChipsRecursos, Fecha, InsigniaOferta, Tarjeta, Vacio } from '@/components/admin/Piezas';
+import { Card, DateDisplay, EmptyState, OfferBadge, ResourceChips } from '@/components/admin/Primitives';
 import {
-  DISPONIBILIDAD_LABEL,
-  ESTADOS_OFERTA,
-  ESTADO_OFERTA_META,
-  RADIO_LABEL,
-  type Disponibilidad,
-  type EstadoOferta,
-} from '@/lib/catalogos';
-import { listarOfertas } from '@/lib/consultas';
-import { formatearTelefono } from '@/lib/validaciones';
-import { folioOferta } from '@/lib/whatsapp';
+  AVAILABILITY_LABELS,
+  OFFER_STATUSES,
+  OFFER_STATUS_META,
+  RADIUS_LABELS,
+  type Availability,
+  type OfferStatus,
+} from '@/lib/catalogs';
+import { listOffers } from '@/lib/queries';
+import { formatPhone } from '@/lib/validations';
+import { offerCode } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
-type Props = {
-  searchParams: Promise<{ estado?: string; q?: string; pagina?: string }>;
+type PageProps = {
+  searchParams: Promise<{ 'estado'?: string; 'pagina'?: string; status?: string; page?: string; q?: string }>;
 };
 
-export default async function Ofertas({ searchParams }: Props) {
+export default async function Offers({ searchParams }: PageProps) {
   const params = await searchParams;
-  const estado = ESTADOS_OFERTA.includes(params.estado as EstadoOferta)
-    ? (params.estado as EstadoOferta)
+  const statusParam = params['estado'] ?? params.status;
+  const status = OFFER_STATUSES.includes(statusParam as OfferStatus)
+    ? (statusParam as OfferStatus)
     : undefined;
-  const busqueda = params.q ?? '';
-  const pagina = Math.max(1, Number(params.pagina) || 1);
+  const search = params.q ?? '';
+  const page = Math.max(1, Number(params['pagina'] ?? params.page) || 1);
 
-  const { filas, total, paginas } = await listarOfertas({ estado, busqueda, pagina });
+  const { rows, total, pages } = await listOffers({ status, search, page });
 
-  const enlaceFiltro = (e?: EstadoOferta) => {
+  const filterLink = (st?: OfferStatus) => {
     const sp = new URLSearchParams();
-    if (e) sp.set('estado', e);
-    if (busqueda) sp.set('q', busqueda);
+    if (st) sp.set('estado', st);
+    if (search) sp.set('q', search);
     const query = sp.toString();
     return `/admin/ofertas${query ? `?${query}` : ''}`;
   };
@@ -46,35 +47,35 @@ export default async function Ofertas({ searchParams }: Props) {
         </p>
       </div>
 
-      <Tarjeta>
+      <Card>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href={enlaceFiltro()}
+            href={filterLink()}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-              !estado ? 'bg-tinta text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+              !status ? 'bg-tinta text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
             }`}
           >
             Todos
           </Link>
-          {ESTADOS_OFERTA.map((e) => (
+          {OFFER_STATUSES.map((st) => (
             <Link
-              key={e}
-              href={enlaceFiltro(e)}
+              key={st}
+              href={filterLink(st)}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                estado === e ? 'bg-tinta text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                status === st ? 'bg-tinta text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
               }`}
             >
-              <span aria-hidden="true">{ESTADO_OFERTA_META[e].emoji}</span> {ESTADO_OFERTA_META[e].label}
+              <span aria-hidden="true">{OFFER_STATUS_META[st].emoji}</span> {OFFER_STATUS_META[st].label}
             </Link>
           ))}
         </div>
 
         <form method="get" className="mt-4 flex gap-2">
-          {estado && <input type="hidden" name="estado" value={estado} />}
+          {status && <input type="hidden" name="estado" value={status} />}
           <input
             type="search"
             name="q"
-            defaultValue={busqueda}
+            defaultValue={search}
             placeholder="Buscar por nombre, teléfono, municipio, oficio u organización…"
             aria-label="Buscar voluntarios"
             className="flex-1 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm focus:border-marca-morado focus:ring-2 focus:ring-marca-morado/20"
@@ -86,43 +87,42 @@ export default async function Ofertas({ searchParams }: Props) {
             Buscar
           </button>
         </form>
-      </Tarjeta>
+      </Card>
 
-      {filas.length === 0 ? (
-        <Vacio>No hay voluntarios con esos criterios.</Vacio>
+      {rows.length === 0 ? (
+        <EmptyState>No hay voluntarios con esos criterios.</EmptyState>
       ) : (
         <ul className="space-y-3">
-          {filas.map((o) => (
+          {rows.map((o) => (
             <li key={o.id}>
               <Link
                 href={`/admin/ofertas/${o.id}`}
                 className="block rounded-2xl bg-white p-5 ring-1 ring-neutral-200 transition hover:ring-marca-morado"
               >
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="font-mono text-sm font-bold text-neutral-400">{folioOferta(o.numero)}</span>
-                  <InsigniaOferta estado={o.estado} />
-                  <span className="font-bold text-tinta">{o.nombre}</span>
-                  {o.organizacion && <span className="text-sm text-neutral-500">({o.organizacion})</span>}
+                  <span className="font-mono text-sm font-bold text-neutral-400">{offerCode(o.number)}</span>
+                  <OfferBadge status={o.status} />
+                  <span className="font-bold text-tinta">{o.name}</span>
+                  {o.organization && <span className="text-sm text-neutral-500">({o.organization})</span>}
                   <span className="ml-auto text-sm text-neutral-400">
-                    <Fecha valor={o.creadoEn} />
+                    <DateDisplay value={o.createdAt} />
                   </span>
                 </div>
 
-                <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-neutral-700">{o.descripcion}</p>
+                <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-neutral-700">{o.description}</p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-neutral-500">
-                  <span className="font-mono">{formatearTelefono(o.telefono)}</span>
+                  <span className="font-mono">{formatPhone(o.phone)}</span>
                   <span>
-                    📍 {o.municipio} · {RADIO_LABEL[o.radioKm]}
+                    📍 {o.municipality} · {RADIUS_LABELS[o.radiusKm]}
                   </span>
                   <span>
-                    🕒{' '}
-                    {(o.disponibilidad as Disponibilidad[]).map((d) => DISPONIBILIDAD_LABEL[d]).join(', ')}
+                    🕒 {(o.availability as Availability[]).map((d) => AVAILABILITY_LABELS[d]).join(', ')}
                   </span>
                 </div>
 
                 <div className="mt-3">
-                  <ChipsRecursos tipos={o.tipos} lado="ofrezco" />
+                  <ResourceChips types={o.types} side="offering" />
                 </div>
               </Link>
             </li>
@@ -130,20 +130,20 @@ export default async function Ofertas({ searchParams }: Props) {
         </ul>
       )}
 
-      {paginas > 1 && (
+      {pages > 1 && (
         <nav className="flex justify-center gap-2" aria-label="Paginación">
-          {Array.from({ length: paginas }, (_, i) => i + 1).map((p) => {
+          {Array.from({ length: pages }, (_, i) => i + 1).map((p) => {
             const sp = new URLSearchParams();
-            if (estado) sp.set('estado', estado);
-            if (busqueda) sp.set('q', busqueda);
+            if (status) sp.set('estado', status);
+            if (search) sp.set('q', search);
             sp.set('pagina', String(p));
             return (
               <Link
                 key={p}
                 href={`/admin/ofertas?${sp.toString()}`}
-                aria-current={p === pagina ? 'page' : undefined}
+                aria-current={p === page ? 'page' : undefined}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-                  p === pagina ? 'bg-tinta text-white' : 'bg-white text-neutral-600 ring-1 ring-neutral-200'
+                  p === page ? 'bg-tinta text-white' : 'bg-white text-neutral-600 ring-1 ring-neutral-200'
                 }`}
               >
                 {p}

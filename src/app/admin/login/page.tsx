@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { Logo } from '@/components/Logo';
 
-import { FormularioLogin } from './FormularioLogin';
+import { LoginForm } from './LoginForm';
 
 export const metadata: Metadata = {
   title: 'Panel interno',
@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 export default async function Login({
   searchParams,
 }: {
-  searchParams: Promise<{ siguiente?: string }>;
+  searchParams: Promise<{ next?: string }>;
 }) {
-  const { siguiente } = await searchParams;
+  const { next } = await searchParams;
 
   return (
     <main className="grid min-h-dvh place-items-center bg-nube px-5 py-12">
@@ -31,7 +31,7 @@ export default async function Login({
           </p>
 
           <div className="mt-7">
-            <FormularioLogin siguiente={siguiente} />
+            <LoginForm next={next} />
           </div>
         </div>
 

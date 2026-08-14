@@ -7,27 +7,26 @@ const scrypt = promisify(scryptCb) as (
   keylen: number,
 ) => Promise<Buffer>;
 
-const LARGO_CLAVE = 64;
+const PASSWORD_HASH_LENGTH = 64;
 
 /**
- * scrypt de node:crypto en vez de bcrypt/argon2 a propósito: no necesita
- * compilación nativa, así el proyecto se instala igual en cualquier máquina del
- * equipo y en el servidor. Formato: scrypt$<salt hex>$<hash hex>.
+ * node:crypto scrypt is intentionally used instead of bcrypt or argon2 because
+ * it needs no native compilation. Format: scrypt$<salt hex>$<hash hex>.
  */
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
-  const hash = await scrypt(password, salt, LARGO_CLAVE);
+  const hash = await scrypt(password, salt, PASSWORD_HASH_LENGTH);
   return `scrypt$${salt.toString('hex')}$${hash.toString('hex')}`;
 }
 
-export async function verificarPassword(password: string, almacenado: string): Promise<boolean> {
-  const [algoritmo, saltHex, hashHex] = almacenado.split('$');
-  if (algoritmo !== 'scrypt' || !saltHex || !hashHex) return false;
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const [algorithm, saltHex, hashHex] = stored.split('$');
+  if (algorithm !== 'scrypt' || !saltHex || !hashHex) return false;
 
   const salt = Buffer.from(saltHex, 'hex');
-  const esperado = Buffer.from(hashHex, 'hex');
-  const calculado = await scrypt(password, salt, esperado.length);
+  const expected = Buffer.from(hashHex, 'hex');
+  const calculated = await scrypt(password, salt, expected.length);
 
-  if (calculado.length !== esperado.length) return false;
-  return timingSafeEqual(calculado, esperado);
+  if (calculated.length !== expected.length) return false;
+  return timingSafeEqual(calculated, expected);
 }

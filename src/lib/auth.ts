@@ -3,12 +3,12 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { COOKIE_SESION, firmarSesion, verificarSesion, type Sesion } from './sesion';
+import { SESSION_COOKIE, signSession, verifySession, type Session } from './session';
 
-export async function iniciarSesion(sesion: Sesion): Promise<void> {
-  const token = await firmarSesion(sesion);
+export async function startSession(session: Session): Promise<void> {
+  const token = await signSession(session);
   const store = await cookies();
-  store.set(COOKIE_SESION, token, {
+  store.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -17,23 +17,23 @@ export async function iniciarSesion(sesion: Sesion): Promise<void> {
   });
 }
 
-export async function cerrarSesion(): Promise<void> {
+export async function endSession(): Promise<void> {
   const store = await cookies();
-  store.delete(COOKIE_SESION);
+  store.delete(SESSION_COOKIE);
 }
 
-export async function obtenerSesion(): Promise<Sesion | null> {
+export async function getSession(): Promise<Session | null> {
   const store = await cookies();
-  return verificarSesion(store.get(COOKIE_SESION)?.value);
+  return verifySession(store.get(SESSION_COOKIE)?.value);
 }
 
 /**
- * Para usar al inicio de cada página y cada server action del panel.
- * `proxy.ts` ya bloquea el acceso, pero esta verificación es la que realmente
- * protege: el proxy no se ejecuta en las server actions.
+ * Use at the start of every panel page and server action. `proxy.ts` blocks
+ * navigation, but this verification provides the actual protection because the
+ * proxy does not execute in server actions.
  */
-export async function requerirSesion(): Promise<Sesion> {
-  const sesion = await obtenerSesion();
-  if (!sesion) redirect('/admin/login');
-  return sesion;
+export async function requireSession(): Promise<Session> {
+  const session = await getSession();
+  if (!session) redirect('/admin/login');
+  return session;
 }

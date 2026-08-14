@@ -1,17 +1,16 @@
 type Props = {
   className?: string;
-  /** Muestra el nombre y el lema al lado del símbolo. */
-  conTexto?: boolean;
-  /** Para el pie de página, sobre fondo claro pero con texto en gris. */
-  tono?: 'oscuro' | 'claro';
+  /** Shows the name and tagline next to the symbol. */
+  showText?: boolean;
+  /** Footer treatment on a light background with gray text. */
+  tone?: 'dark' | 'light';
 };
 
 /**
- * El símbolo son dos mitades de un mismo corazón separadas por un hilo de aire:
- * dos partes que solo funcionan cuando se juntan. Cada mitad lleva un tramo
- * distinto del gradiente de marca.
+ * The symbol is two halves of one heart separated by air: two parts that work
+ * only when joined. Each half carries a different segment of the brand gradient.
  */
-export function Logo({ className = '', conTexto = true, tono = 'oscuro' }: Props) {
+export function Logo({ className = '', showText = true, tone = 'dark' }: Props) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <svg
@@ -42,11 +41,11 @@ export function Logo({ className = '', conTexto = true, tono = 'oscuro' }: Props
         />
       </svg>
 
-      {conTexto && (
+      {showText && (
         <span className="flex flex-col leading-none">
           <span
             className={`text-[1.35rem] font-extrabold tracking-tight ${
-              tono === 'oscuro' ? 'text-tinta' : 'text-neutral-800'
+              tone === 'dark' ? 'text-tinta' : 'text-neutral-800'
             }`}
           >
             Conexiones

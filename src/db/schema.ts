@@ -14,196 +14,196 @@ import {
 } from 'drizzle-orm/pg-core';
 
 import {
-  DISPONIBILIDADES,
-  ESTADOS_CONEXION,
-  ESTADOS_OFERTA,
-  ESTADOS_SOLICITUD,
+  AVAILABILITIES,
+  CONNECTION_STATUSES,
+  OFFER_STATUSES,
+  REQUEST_STATUSES,
   ROLES,
-  TIPOS_RECURSO,
-  URGENCIAS,
-} from '@/lib/catalogos';
+  RESOURCE_TYPES,
+  URGENCIES,
+} from '@/lib/catalogs';
 
-export const tipoRecursoEnum = pgEnum('tipo_recurso', TIPOS_RECURSO);
-export const urgenciaEnum = pgEnum('urgencia', URGENCIAS);
-export const disponibilidadEnum = pgEnum('disponibilidad', DISPONIBILIDADES);
-export const estadoSolicitudEnum = pgEnum('estado_solicitud', ESTADOS_SOLICITUD);
-export const estadoOfertaEnum = pgEnum('estado_oferta', ESTADOS_OFERTA);
-export const estadoConexionEnum = pgEnum('estado_conexion', ESTADOS_CONEXION);
-export const rolEnum = pgEnum('rol', ROLES);
+export const resourceTypeEnum = pgEnum('resource_type', RESOURCE_TYPES);
+export const urgencyEnum = pgEnum('urgency', URGENCIES);
+export const availabilityEnum = pgEnum('availability', AVAILABILITIES);
+export const requestStatusEnum = pgEnum('request_status', REQUEST_STATUSES);
+export const offerStatusEnum = pgEnum('offer_status', OFFER_STATUSES);
+export const connectionStatusEnum = pgEnum('connection_status', CONNECTION_STATUSES);
+export const roleEnum = pgEnum('role', ROLES);
 
 /**
- * NECESITO AYUDA — una necesidad concreta reportada por una persona.
- * Los datos personales de esta tabla nunca salen a la web pública.
+ * A concrete help need reported by a person. Personal data from this table is
+ * never exposed on the public web.
  */
-export const solicitudes = pgTable(
-  'solicitudes',
+export const requests = pgTable(
+  'requests',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    /** Consecutivo legible para hablar por WhatsApp: "solicitud S-0042". */
-    numero: serial('numero').notNull(),
+    /** Human-readable WhatsApp reference, such as "solicitud S-0042". */
+    number: serial('number').notNull(),
 
-    // Quién
-    nombre: text('nombre').notNull(),
-    telefono: text('telefono').notNull(),
-    esParaOtraPersona: boolean('es_para_otra_persona').notNull().default(false),
-    personasAfectadas: integer('personas_afectadas').notNull().default(1),
-    tieneMenores: boolean('tiene_menores').notNull().default(false),
-    tieneAdultosMayores: boolean('tiene_adultos_mayores').notNull().default(false),
+    // Person
+    name: text('name').notNull(),
+    phone: text('phone').notNull(),
+    isForSomeoneElse: boolean('is_for_someone_else').notNull().default(false),
+    affectedPeople: integer('affected_people').notNull().default(1),
+    hasMinors: boolean('has_minors').notNull().default(false),
+    hasElderly: boolean('has_elderly').notNull().default(false),
 
-    // Qué
-    tipos: tipoRecursoEnum('tipos').array().notNull(),
-    descripcion: text('descripcion').notNull(),
-    urgencia: urgenciaEnum('urgencia').notNull(),
+    // Need
+    types: resourceTypeEnum('types').array().notNull(),
+    description: text('description').notNull(),
+    urgency: urgencyEnum('urgency').notNull(),
 
-    // Dónde
-    departamento: text('departamento').notNull(),
-    municipio: text('municipio').notNull(),
-    zona: text('zona'),
-    referenciaDireccion: text('referencia_direccion'),
+    // Location
+    department: text('department').notNull(),
+    municipality: text('municipality').notNull(),
+    zone: text('zone'),
+    addressReference: text('address_reference'),
     lat: doublePrecision('lat'),
     lng: doublePrecision('lng'),
 
-    // Trazabilidad
-    estado: estadoSolicitudEnum('estado').notNull().default('recibida'),
-    notasInternas: text('notas_internas'),
-    motivoDescarte: text('motivo_descarte'),
+    // Traceability
+    status: requestStatusEnum('status').notNull().default('received'),
+    internalNotes: text('internal_notes'),
+    discardReason: text('discard_reason'),
 
-    // Consentimiento (habeas data, Ley 1581 de 2012)
-    aceptaDatos: boolean('acepta_datos').notNull(),
-    aceptaWhatsapp: boolean('acepta_whatsapp').notNull().default(true),
+    // Consent (Habeas Data Law 1581 of 2012)
+    acceptsDataUse: boolean('accepts_data_use').notNull(),
+    acceptsWhatsapp: boolean('accepts_whatsapp').notNull().default(true),
 
-    creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().defaultNow(),
-    actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).notNull().defaultNow(),
-    contactadoEn: timestamp('contactado_en', { withTimezone: true }),
-    verificadoEn: timestamp('verificado_en', { withTimezone: true }),
-    conectadoEn: timestamp('conectado_en', { withTimezone: true }),
-    resueltoEn: timestamp('resuelto_en', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    contactedAt: timestamp('contacted_at', { withTimezone: true }),
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
+    connectedAt: timestamp('connected_at', { withTimezone: true }),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
   },
   (t) => [
-    index('solicitudes_estado_idx').on(t.estado),
-    index('solicitudes_municipio_idx').on(t.municipio),
-    index('solicitudes_creado_idx').on(t.creadoEn),
-    index('solicitudes_telefono_idx').on(t.telefono),
+    index('requests_status_idx').on(t.status),
+    index('requests_municipality_idx').on(t.municipality),
+    index('requests_created_idx').on(t.createdAt),
+    index('requests_phone_idx').on(t.phone),
   ],
 );
 
 /**
- * QUIERO AYUDAR — una capacidad puesta a disposición.
- * Ojo: no es "una donación", es algo que la persona puede hacer o prestar.
+ * A capability offered by a volunteer. It is not necessarily a donation: it
+ * can be something the person can do or lend.
  */
-export const ofertas = pgTable(
-  'ofertas',
+export const offers = pgTable(
+  'offers',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    numero: serial('numero').notNull(),
+    number: serial('number').notNull(),
 
-    // Quién
-    nombre: text('nombre').notNull(),
-    telefono: text('telefono').notNull(),
+    // Person
+    name: text('name').notNull(),
+    phone: text('phone').notNull(),
     email: text('email'),
-    organizacion: text('organizacion'),
+    organization: text('organization'),
 
-    // Qué pone a disposición
-    tipos: tipoRecursoEnum('tipos').array().notNull(),
+    // Offered capability
+    types: resourceTypeEnum('types').array().notNull(),
     /** "Soy carpintero y puedo reparar puertas, ventanas y techos." */
-    descripcion: text('descripcion').notNull(),
+    description: text('description').notNull(),
 
-    // Dónde y hasta dónde se puede mover
-    departamento: text('departamento').notNull(),
-    municipio: text('municipio').notNull(),
-    zona: text('zona'),
-    radioKm: integer('radio_km').notNull().default(10),
+    // Travel location and radius
+    department: text('department').notNull(),
+    municipality: text('municipality').notNull(),
+    zone: text('zone'),
+    radiusKm: integer('radius_km').notNull().default(10),
     lat: doublePrecision('lat'),
     lng: doublePrecision('lng'),
 
-    // Cuándo
-    disponibilidad: disponibilidadEnum('disponibilidad').array().notNull(),
-    notaDisponibilidad: text('nota_disponibilidad'),
+    // Availability
+    availability: availabilityEnum('availability').array().notNull(),
+    availabilityNote: text('availability_note'),
 
-    estado: estadoOfertaEnum('estado').notNull().default('nueva'),
-    notasInternas: text('notas_internas'),
+    status: offerStatusEnum('status').notNull().default('new'),
+    internalNotes: text('internal_notes'),
 
-    aceptaDatos: boolean('acepta_datos').notNull(),
-    aceptaWhatsapp: boolean('acepta_whatsapp').notNull().default(true),
+    acceptsDataUse: boolean('accepts_data_use').notNull(),
+    acceptsWhatsapp: boolean('accepts_whatsapp').notNull().default(true),
 
-    creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().defaultNow(),
-    actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).notNull().defaultNow(),
-    verificadoEn: timestamp('verificado_en', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
   },
   (t) => [
-    index('ofertas_estado_idx').on(t.estado),
-    index('ofertas_municipio_idx').on(t.municipio),
-    index('ofertas_creado_idx').on(t.creadoEn),
-    uniqueIndex('ofertas_telefono_idx').on(t.telefono),
+    index('offers_status_idx').on(t.status),
+    index('offers_municipality_idx').on(t.municipality),
+    index('offers_created_idx').on(t.createdAt),
+    uniqueIndex('offers_phone_idx').on(t.phone),
   ],
 );
 
-/** El match: une una necesidad con una capacidad. Lo propone el sistema, lo confirma una persona. */
-export const conexiones = pgTable(
-  'conexiones',
+/** Links a request with an offer; the system proposes it and a person confirms it. */
+export const connections = pgTable(
+  'connections',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    solicitudId: uuid('solicitud_id')
+    requestId: uuid('request_id')
       .notNull()
-      .references(() => solicitudes.id, { onDelete: 'cascade' }),
-    ofertaId: uuid('oferta_id')
+      .references(() => requests.id, { onDelete: 'cascade' }),
+    offerId: uuid('offer_id')
       .notNull()
-      .references(() => ofertas.id, { onDelete: 'cascade' }),
-    estado: estadoConexionEnum('estado').notNull().default('propuesta'),
-    /** Puntaje 0-100 calculado por el motor de sugerencias al momento de proponer. */
+      .references(() => offers.id, { onDelete: 'cascade' }),
+    status: connectionStatusEnum('status').notNull().default('proposed'),
+    /** Score from 0 to 100 calculated by the suggestion engine when proposed. */
     score: integer('score').notNull().default(0),
-    /** Por qué el sistema sugirió este cruce, en texto legible para el operador. */
-    razones: text('razones'),
-    nota: text('nota'),
-    creadoPor: uuid('creado_por').references(() => usuarios.id, { onDelete: 'set null' }),
-    creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().defaultNow(),
-    confirmadoEn: timestamp('confirmado_en', { withTimezone: true }),
+    /** Why the system suggested this match, in operator-readable text. */
+    reasons: text('reasons'),
+    note: text('note'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
   },
   (t) => [
-    uniqueIndex('conexiones_par_idx').on(t.solicitudId, t.ofertaId),
-    index('conexiones_solicitud_idx').on(t.solicitudId),
-    index('conexiones_oferta_idx').on(t.ofertaId),
+    uniqueIndex('connections_pair_idx').on(t.requestId, t.offerId),
+    index('connections_request_idx').on(t.requestId),
+    index('connections_offer_idx').on(t.offerId),
   ],
 );
 
-/** Bitácora inmutable: quién cambió qué y cuándo. Es la base de la trazabilidad y de las cifras. */
-export const eventos = pgTable(
-  'eventos',
+/** Immutable log of who changed what and when; the basis for traceability and statistics. */
+export const events = pgTable(
+  'events',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    entidad: text('entidad').notNull(), // 'solicitud' | 'oferta' | 'conexion'
-    entidadId: uuid('entidad_id').notNull(),
-    estadoAnterior: text('estado_anterior'),
-    estadoNuevo: text('estado_nuevo'),
-    accion: text('accion').notNull(),
-    nota: text('nota'),
-    actorId: uuid('actor_id').references(() => usuarios.id, { onDelete: 'set null' }),
-    actorNombre: text('actor_nombre'),
-    creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().defaultNow(),
+    entityType: text('entity_type').notNull(), // 'request' | 'offer' | 'connection'
+    entityId: uuid('entity_id').notNull(),
+    previousStatus: text('previous_status'),
+    newStatus: text('new_status'),
+    action: text('action').notNull(),
+    note: text('note'),
+    actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    actorName: text('actor_name'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('eventos_entidad_idx').on(t.entidad, t.entidadId), index('eventos_creado_idx').on(t.creadoEn)],
+  (t) => [index('events_entity_idx').on(t.entityType, t.entityId), index('events_created_idx').on(t.createdAt)],
 );
 
-/** Equipo interno de Conexiones. No hay cuentas para ciudadanos: ellos solo dejan su teléfono. */
-export const usuarios = pgTable(
-  'usuarios',
+/** Conexiones internal team. Citizens have no accounts; they only leave a phone number. */
+export const users = pgTable(
+  'users',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     email: text('email').notNull(),
-    nombre: text('nombre').notNull(),
+    name: text('name').notNull(),
     passwordHash: text('password_hash').notNull(),
-    rol: rolEnum('rol').notNull().default('operador'),
-    activo: boolean('activo').notNull().default(true),
-    creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().defaultNow(),
-    ultimoAccesoEn: timestamp('ultimo_acceso_en', { withTimezone: true }),
+    role: roleEnum('role').notNull().default('operator'),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
   },
-  (t) => [uniqueIndex('usuarios_email_idx').on(sql`lower(${t.email})`)],
+  (t) => [uniqueIndex('users_email_idx').on(sql`lower(${t.email})`)],
 );
 
-export type Solicitud = typeof solicitudes.$inferSelect;
-export type NuevaSolicitud = typeof solicitudes.$inferInsert;
-export type Oferta = typeof ofertas.$inferSelect;
-export type NuevaOferta = typeof ofertas.$inferInsert;
-export type Conexion = typeof conexiones.$inferSelect;
-export type Evento = typeof eventos.$inferSelect;
-export type Usuario = typeof usuarios.$inferSelect;
+export type HelpRequest = typeof requests.$inferSelect;
+export type NewHelpRequest = typeof requests.$inferInsert;
+export type Offer = typeof offers.$inferSelect;
+export type NewOffer = typeof offers.$inferInsert;
+export type Connection = typeof connections.$inferSelect;
+export type LogEvent = typeof events.$inferSelect;
+export type User = typeof users.$inferSelect;
