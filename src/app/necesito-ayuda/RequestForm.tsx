@@ -85,6 +85,7 @@ export function RequestForm() {
           name="department"
           label="Departamento"
           options={DEPARTMENT_OPTIONS}
+          searchPlaceholder="Buscar departamento…"
           error={errors.department}
           required
         />

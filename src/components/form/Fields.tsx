@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef } from 'react';
 
+import { SearchableSelectField, SEARCHABLE_SELECT_MIN_OPTIONS } from '@/components/form/SearchableSelectField';
+
 /**
  * Shared form primitives for both sides of the network.
  *
@@ -129,12 +131,34 @@ export function SelectField({
   options,
   placeholder = 'Selecciona…',
   defaultValue,
+  searchable,
+  searchPlaceholder,
 }: Base & {
   options: readonly { value: string; text: string }[];
   placeholder?: string;
   defaultValue?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }) {
   const id = useId();
+  const useSearchable = searchable ?? options.length >= SEARCHABLE_SELECT_MIN_OPTIONS;
+
+  if (useSearchable) {
+    return (
+      <SearchableSelectField
+        name={name}
+        label={label}
+        hint={hint}
+        error={error}
+        required={required}
+        options={options}
+        placeholder={placeholder}
+        defaultValue={defaultValue}
+        searchPlaceholder={searchPlaceholder}
+      />
+    );
+  }
+
   return (
     <div>
       <FieldLabel htmlFor={id} text={label} required={required} />
