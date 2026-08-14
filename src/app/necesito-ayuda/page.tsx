@@ -1,14 +1,13 @@
-import type { Metadata } from 'next';
-
 import { FormShell } from '@/components/form/Shell';
+import { publicPageMetadata } from '@/lib/site';
 
 import { RequestForm } from './RequestForm';
 
-export const metadata: Metadata = {
-  title: 'Necesito ayuda',
-  description:
-    'Cuéntanos qué necesitas. Verificamos tu solicitud y buscamos a alguien que pueda ayudarte. Gratuito y confidencial.',
-};
+export const metadata = publicPageMetadata(
+  'Necesito ayuda',
+  'Cuéntanos qué necesitas. Verificamos tu solicitud y buscamos a alguien que pueda ayudarte. Gratuito y confidencial.',
+  '/necesito-ayuda',
+);
 
 export default function RequestHelpPage() {
   return (

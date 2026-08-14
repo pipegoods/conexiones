@@ -1,12 +1,12 @@
-import type { Metadata } from 'next';
-
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { publicPageMetadata } from '@/lib/site';
 
-export const metadata: Metadata = {
-  title: 'Política de privacidad',
-  description: 'Cómo Conexiones trata, protege y elimina los datos personales de quienes usan la plataforma.',
-};
+export const metadata = publicPageMetadata(
+  'Política de privacidad',
+  'Cómo Conexiones trata, protege y elimina los datos personales de quienes usan la plataforma.',
+  '/privacidad',
+);
 
 /**
  * Operational draft, not legal advice. A lawyer must review it before production:

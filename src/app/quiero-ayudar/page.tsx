@@ -1,14 +1,13 @@
-import type { Metadata } from 'next';
-
 import { FormShell } from '@/components/form/Shell';
+import { publicPageMetadata } from '@/lib/site';
 
 import { OfferForm } from './OfferForm';
 
-export const metadata: Metadata = {
-  title: 'Quiero ayudar',
-  description:
-    'Pon a disposición lo que sabes hacer, tienes o puedes ofrecer: tiempo, profesión, vehículo, herramientas o espacio. No necesitas dinero para hacer la diferencia.',
-};
+export const metadata = publicPageMetadata(
+  'Quiero ayudar',
+  'Pon a disposición lo que sabes hacer, tienes o puedes ofrecer: tiempo, profesión, vehículo, herramientas o espacio. No necesitas dinero para hacer la diferencia.',
+  '/quiero-ayudar',
+);
 
 export default function OfferHelpPage() {
   return (

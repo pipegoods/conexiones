@@ -1,12 +1,12 @@
-import type { Metadata } from 'next';
-
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { publicPageMetadata } from '@/lib/site';
 
-export const metadata: Metadata = {
-  title: 'Términos y condiciones',
-  description: 'Qué es y qué no es Conexiones, y las reglas de uso de la plataforma.',
-};
+export const metadata = publicPageMetadata(
+  'Términos y condiciones',
+  'Qué es y qué no es Conexiones, y las reglas de uso de la plataforma.',
+  '/terminos',
+);
 
 /** Operational draft, not legal advice. A lawyer must review it before production. */
 export default function Terms() {
